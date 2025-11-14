@@ -6,6 +6,7 @@ const { ethers } = require('ethers');
 const axios = require('axios');
 const authRoutes = require('./auth');
 const FormData = require('form-data');
+const transferRoutes = require('./transfer');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
 
@@ -168,7 +169,7 @@ app.get("/api/health", (req, res) => {
     ocr: genAI ? "enabled" : "disabled",
   });
 });
-
+app.use('/api/transfer', transferRoutes);
 // OCR endpoint - Extract data from document image
 app.post("/api/ocr", upload.single("file"), async (req, res) => {
   try {
