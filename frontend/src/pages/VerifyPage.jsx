@@ -12,10 +12,10 @@ const VerifyPage = () => {
 
   const handleVerify = async (e) => {
     e.preventDefault();
-    if (!contract) {
-      alert('Please connect your wallet first');
-      return;
-    }
+    // if (!contract) {
+    //   alert('Please connect your wallet first');
+    //   return;
+    // }
 
     if (!recordId) {
       alert('Please enter the Record ID to verify against');

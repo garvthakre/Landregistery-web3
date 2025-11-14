@@ -60,10 +60,10 @@ const TransferPage = () => {
 
   const handleInitiateTransfer = async (e) => {
     e.preventDefault();
-    if (!contract) {
-      alert('Please connect your wallet first');
-      return;
-    }
+    // if (!contract) {
+    //   alert('Please connect your wallet first');
+    //   return;
+    // }
 
     setLoading(true);
     try {

@@ -204,7 +204,7 @@ app.post("/api/ocr", upload.single("file"), async (req, res) => {
     });
   }
 });
-
+app.use('/api/auth', authRoutes);
 // Upload & create blockchain record
 app.post("/api/upload", upload.single("file"), async (req, res) => {
   try {

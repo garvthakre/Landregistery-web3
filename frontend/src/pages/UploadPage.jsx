@@ -71,10 +71,10 @@ const UploadPage = () => {
   const handleUpload = async (e) => {
     e.preventDefault();
     
-    if (!account) {
-      alert('Please connect your wallet first');
-      return;
-    }
+    // if (!account) {
+    //   alert('Please connect your wallet first');
+    //   return;
+    // }
 
     setLoading(true);
     setUploadResult(null);

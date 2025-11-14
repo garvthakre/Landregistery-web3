@@ -44,6 +44,24 @@ export const WalletProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    // Auto-connect wallet if user is logged in
+    const checkWallet = async () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser && window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts.length > 0) {
+            await connectWallet();
+          }
+        } catch (error) {
+          console.error('Auto-connect failed:', error);
+        }
+      }
+    };
+    checkWallet();
+  }, []);
+
+  useEffect(() => {
     if (window.ethereum) {
       window.ethereum.on('accountsChanged', (accounts) => {
         if (accounts.length > 0) {
