@@ -1,8 +1,19 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
 
 module.exports = {
-  solidity: "0.8.20", // Ensure it matches your contract version
+  solidity: "0.8.19",
+
   networks: {
-    hardhat: {}, // Ensure Hardhat network is properly defined
+    amoy: {
+      url: "https://rpc-amoy.polygon.technology",
+      accounts: [process.env.PRIVATE_KEY],
+    },
+  },
+
+  etherscan: {
+    apiKey: {
+      polygonAmoy: process.env.POLYGONSCAN_API_KEY,
+    },
   },
 };

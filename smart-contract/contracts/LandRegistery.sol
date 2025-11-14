@@ -120,11 +120,19 @@ contract LandRegistry {
         return newRecordId;
     }
     
-    /**
-     * @dev Get a land record by ID
-     * @param _recordId The record ID
-     * @return LandRecord struct
-     */
+/**
+ * @dev Get a land record by ID
+ * @param _recordId The record ID
+ * @return ownerName Name of the land owner
+ * @return village Village name
+ * @return ipfsCID IPFS Content Identifier
+ * @return documentHash SHA-256 hash of the document
+ * @return timestamp Registration timestamp
+ * @return currentOwner Current owner's wallet address
+ * @return uploadedBy Address that uploaded the record
+ * @return pendingOwner Pending transfer recipient
+ * @return ownershipHistory Complete ownership history
+ */
     function getRecord(uint256 _recordId) 
         external 
         view 
@@ -326,3 +334,4 @@ contract LandRegistry {
         
         return pendingRecords;
     }
+}
