@@ -8,7 +8,7 @@ import SignupPage from './pages/SignupPage';
 import UploadPage from './pages/UploadPage';
 import VerifyPage from './pages/VerifyPage';
 import TransferPage from './pages/TransferPage';
-
+import HistoryPage from './pages/HistoryPage';
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   
@@ -134,6 +134,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <VerifyPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <HistoryPage/>
               </ProtectedRoute>
             }
           />
