@@ -1,3 +1,4 @@
+// ...existing code...
 import React, { useState } from 'react';
 import { CheckCircle, XCircle, FileText, Loader2 } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
@@ -6,6 +7,7 @@ import { API_URL } from '../config/api';
 const VerifyPage = () => {
   const { account, contract, loading, setLoading } = useWallet();
   const [verifyFile, setVerifyFile] = useState(null);
+  const [recordId, setRecordId] = useState('');
   const [verifyResult, setVerifyResult] = useState(null);
 
   const handleVerify = async (e) => {
@@ -15,12 +17,18 @@ const VerifyPage = () => {
       return;
     }
 
+    if (!recordId) {
+      alert('Please enter the Record ID to verify against');
+      return;
+    }
+
     setLoading(true);
     setVerifyResult(null);
 
     try {
       const data = new FormData();
       data.append('file', verifyFile);
+      data.append('recordId', recordId); // <-- send recordId like upload page sends owner/village
 
       const response = await fetch(`${API_URL}/verify`, {
         method: 'POST',
@@ -64,6 +72,20 @@ const VerifyPage = () => {
         </p>
 
         <form onSubmit={handleVerify} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Record ID
+            </label>
+            <input
+              type="text"
+              value={recordId}
+              onChange={(e) => setRecordId(e.target.value)}
+              required
+              placeholder="e.g. 0"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Select Document to Verify
@@ -112,25 +134,25 @@ const VerifyPage = () => {
                 <p className={`font-medium ${
                   verifyResult.success ? 'text-green-800' : 'text-red-800'
                 }`}>
-                  {verifyResult.message}
+                  {verifyResult.message || (verifyResult.success ? 'Document verified' : 'Verification failed')}
                 </p>
-                {verifyResult.recordInfo && (
+                {verifyResult.recordDetails && (
                   <div className="mt-3 space-y-2 text-sm">
                     <p className="text-gray-700">
                       <span className="font-semibold">Owner:</span>{' '}
-                      {verifyResult.recordInfo.ownerName}
+                      {verifyResult.recordDetails.ownerName}
                     </p>
                     <p className="text-gray-700">
                       <span className="font-semibold">Village:</span>{' '}
-                      {verifyResult.recordInfo.village}
+                      {verifyResult.recordDetails.village}
                     </p>
                     <p className="text-gray-700">
                       <span className="font-semibold">Current Owner:</span>{' '}
-                      {verifyResult.recordInfo.currentOwner}
+                      {verifyResult.recordDetails.currentOwner || 'N/A'}
                     </p>
                     <p className="text-gray-700">
                       <span className="font-semibold">Timestamp:</span>{' '}
-                      {new Date(verifyResult.recordInfo.timestamp * 1000).toLocaleString()}
+                      {verifyResult.recordDetails.timestamp}
                     </p>
                   </div>
                 )}
@@ -144,3 +166,4 @@ const VerifyPage = () => {
 };
 
 export default VerifyPage;
+ 
