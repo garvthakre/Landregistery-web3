@@ -4,6 +4,7 @@ const multer = require('multer');
 const crypto = require('crypto');
 const { ethers } = require('ethers');
 const axios = require('axios');
+const authRoutes = require('./auth');
 const FormData = require('form-data');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
