@@ -1,0 +1,39 @@
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production build
+build/
+dist/
+
+# Misc
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Hardhat files
+cache/
+artifacts/
+typechain-types/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Deployment artifacts
+contract-address.txt
+deployments/
