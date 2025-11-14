@@ -23,11 +23,11 @@ const upload = multer({
 
 // ================== ENV VALIDATIONS ===================
 if (!process.env.PINATA_JWT) {
-  console.error("❌ Missing PINATA_JWT in .env");
-  process.exit(1);
+  console.warn("⚠️  Missing PINATA_JWT in .env - IPFS uploads will fail");
 }
 if (!process.env.CONTRACT_ADDRESS || !process.env.PRIVATE_KEY || !process.env.RPC_URL) {
   console.error("❌ Missing blockchain config in .env");
+  console.error("Required: CONTRACT_ADDRESS, PRIVATE_KEY, RPC_URL");
   process.exit(1);
 }
 

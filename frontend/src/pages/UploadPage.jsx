@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Upload, Loader2, CheckCircle } from 'lucide-react';
+import { Upload, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { API_URL } from '../config/api';
-
 const UploadPage = () => {
   const { account, contract, loading, setLoading } = useWallet();
   const [formData, setFormData] = useState({
