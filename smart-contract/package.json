@@ -11,12 +11,16 @@
     "coverage": "hardhat coverage",
     "node": "hardhat node"
   },
-  "keywords": ["blockchain", "land-registry", "solidity"],
+  "keywords": [
+    "blockchain",
+    "land-registry",
+    "solidity"
+  ],
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
-    "hardhat": "^2.19.0"
+    "hardhat": "^2.27.0"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.0",

@@ -10,5 +10,17 @@
     "role": "user",
     "walletAddress": "0x5c6411bc64085fa3b7be7b5a4a9e7b0661329fa5",
     "createdAt": "2025-11-14T13:50:11.612Z"
+  },
+  {
+    "id": "1763130508153",
+    "name": "bb",
+    "aadharNo": "123569595959",
+    "phoneNo": "1234567890",
+    "address": "nhnh",
+    "password": "12345",
+    "patwariId": null,
+    "role": "user",
+    "walletAddress": "0x4a389575be39171fa8a7510eb43c2dc4319d7de5",
+    "createdAt": "2025-11-14T14:28:28.153Z"
   }
 ]

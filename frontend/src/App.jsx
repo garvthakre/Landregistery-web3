@@ -37,14 +37,12 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="bg-gradient-to-r from-green-600 to-blue-600 text-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 py-4">
+    <nav className="bg-white text-black">
+      <div className="px-4 py-6 border-b border-gray-400">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">🏛️ Land Registry System</h1>
-            <p className="text-xs text-green-100 mt-1">
-              Blockchain-based Land Management
-            </p>
+            <h1 className="text-2xl font-bold">Land Registry System</h1>
+           
           </div>
           
           <div className="flex items-center gap-6">
@@ -73,22 +71,24 @@ const Navigation = () => {
 
           <div className="flex items-center gap-4">
             {/* User Info */}
-            <div className="bg-white/10 px-4 py-2 rounded-lg">
+            <div className="bg-gray-300 px-4 py-2 rounded-lg">
               <div className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                <div>
-                  <p className="text-xs text-green-100">
-                    {isAdmin ? '👑 Admin' : '👤 User'}
+               
+                  <div className='flex gap-3 items-center justify-center'>
+<User className="w-4 h-4" />
+                  <p className="text-xs font-bold text-gray-700">
+                    {isAdmin ? 'Admin' : 'User :'}
                   </p>
                   <p className="text-sm font-semibold">{user?.name}</p>
-                </div>
+                  </div>
+                
               </div>
             </div>
 
             {/* Wallet Status */}
             {account && (
-              <div className="bg-white/10 px-4 py-2 rounded-lg">
-                <p className="text-xs text-green-100">Wallet</p>
+              <div className="bg-gray-300 px-4 py-2 rounded-lg">
+                <p className="text-xs text-gray-700 font-bold">Wallet</p>
                 <p className="text-sm font-mono">
                   {account.slice(0, 6)}...{account.slice(-4)}
                 </p>
