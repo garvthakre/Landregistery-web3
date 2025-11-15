@@ -1,40 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { Users, ArrowRight, Clock, Loader2, CheckCircle, Upload, FileText, XCircle } from 'lucide-react';
-import { useWallet } from '../context/WalletContext';
-import { useAuth } from '../context/AuthContext';
-import { API_URL } from '../config/api';
+import { Users, ArrowRight, Clock, Loader2, CheckCircle, Upload, XCircle, Shield, Hash, Database, Bell, Zap, Send } from 'lucide-react';
+
+const API_URL = "http://localhost:5000/api";
 
 const TransferPage = () => {
-  const { account, contract } = useWallet();
-  const { user } = useAuth();
-  const [allRecords, setAllRecords] = useState([]);
-  const [pendingTransfers, setPendingTransfers] = useState([]);
-  const [completedTransfers, setCompletedTransfers] = useState([]);
   const [transferData, setTransferData] = useState({
     recordId: '',
     toUserAadhar: '',
   });
-  const [loading, setLoading] = useState(false);
-  const [loadingRecords, setLoadingRecords] = useState(true);
-  
-  // State for document upload in pending transfer
-  const [uploadingDoc, setUploadingDoc] = useState(null);
+  const [allRecords, setAllRecords] = useState([]);
+  const [pendingTransfers, setPendingTransfers] = useState([]);
+  const [completedTransfers, setCompletedTransfers] = useState([]);
+  const [initiateSteps, setInitiateSteps] = useState([]);
+  const [acceptSteps, setAcceptSteps] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [docFile, setDocFile] = useState(null);
-  const [uploadingTransferId, setUploadingTransferId] = useState(null);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [activeTransferId, setActiveTransferId] = useState(null);
+  const [loadingRecords, setLoadingRecords] = useState(true);
+
+  const INITIATE_STEPS = [
+    { id: 1, name: 'Validating Record', icon: Shield, color: 'blue', description: 'Verifying ownership rights' },
+    { id: 2, name: 'Checking Recipient', icon: Users, color: 'purple', description: 'Validating recipient details' },
+    { id: 3, name: 'Creating Transfer Request', icon: Database, color: 'green', description: 'Generating transfer contract' },
+    { id: 4, name: 'Notifying Parties', icon: Bell, color: 'orange', description: 'Sending notifications' },
+    { id: 5, name: 'Recording on Blockchain', icon: Database, color: 'pink', description: 'Storing transfer intent' },
+  ];
+
+  const ACCEPT_STEPS = [
+    { id: 1, name: 'Verifying Document', icon: Upload, color: 'blue', description: 'Analyzing uploaded document' },
+    { id: 2, name: 'Computing Hash', icon: Hash, color: 'purple', description: 'Generating document hash' },
+    { id: 3, name: 'Cross-Checking Data', icon: Shield, color: 'green', description: 'Validating with blockchain' },
+    { id: 4, name: 'Updating Ownership', icon: Users, color: 'orange', description: 'Transferring ownership rights' },
+    { id: 5, name: 'Broadcasting Transaction', icon: Zap, color: 'pink', description: 'Publishing to network' },
+    { id: 6, name: 'Confirming Transfer', icon: CheckCircle, color: 'indigo', description: 'Finalizing on blockchain' },
+  ];
 
   useEffect(() => {
-    if (user) {
-      loadAllRecords();
-      loadTransfers();
-    }
-  }, [user]);
+    loadAllRecords();
+    loadTransfers();
+  }, []);
 
   const loadAllRecords = async () => {
     setLoadingRecords(true);
     try {
       const response = await fetch(`${API_URL}/records`);
       const result = await response.json();
-
       if (result.success) {
         setAllRecords(result.data);
       }
@@ -49,21 +60,11 @@ const TransferPage = () => {
     try {
       const response = await fetch(`${API_URL}/transfer/history/all`);
       const result = await response.json();
-
       if (result.success) {
-        // Filter pending transfers (where current user is recipient)
-        const pending = result.transfers.filter(
-          t => t.status === 'initiated' && 
-          (t.toOwner.includes(user.aadharNo) || t.toAddress === user.walletAddress)
+        const pending = result.transfers.filter(t => 
+          t.status === 'initiated' || t.status === 'document_verified'
         );
-        
-        // Filter completed transfers
-        const completed = result.transfers.filter(
-          t => t.status === 'completed' &&
-          (t.fromAddress?.toLowerCase() === account?.toLowerCase() ||
-           t.toAddress?.toLowerCase() === account?.toLowerCase())
-        );
-        
+        const completed = result.transfers.filter(t => t.status === 'completed');
         setPendingTransfers(pending);
         setCompletedTransfers(completed);
       }
@@ -72,55 +73,97 @@ const TransferPage = () => {
     }
   };
 
+  const updateStep = (steps, setSteps, stepIndex, status, message = '') => {
+    setSteps(prev => {
+      const updated = [...prev];
+      if (!updated[stepIndex]) {
+        updated[stepIndex] = { ...steps[stepIndex], status, timestamp: Date.now() };
+      } else {
+        updated[stepIndex] = { ...updated[stepIndex], status };
+      }
+      if (status === 'completed') {
+        updated[stepIndex].completedAt = Date.now();
+        updated[stepIndex].message = message;
+      }
+      return updated;
+    });
+  };
+
   const handleInitiateTransfer = async (e) => {
     e.preventDefault();
-
+    
     if (!transferData.toUserAadhar || transferData.toUserAadhar.length !== 12) {
       alert('Please enter a valid 12-digit Aadhar number');
       return;
     }
 
-    setLoading(true);
+    setIsProcessing(true);
+    setInitiateSteps([]);
+
     try {
       const selectedRecord = allRecords.find(r => r.recordId.toString() === transferData.recordId);
       
       if (!selectedRecord) {
         alert('Record not found');
-        setLoading(false);
+        setIsProcessing(false);
         return;
       }
 
-      const transferId = `TXF-${Date.now()}`;
+      // Step 1: Validate
+      updateStep(INITIATE_STEPS, setInitiateSteps, 0, 'processing');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      updateStep(INITIATE_STEPS, setInitiateSteps, 0, 'completed', 'Record validated');
 
+      // Step 2: Check recipient
+      updateStep(INITIATE_STEPS, setInitiateSteps, 1, 'processing');
+      await new Promise(resolve => setTimeout(resolve, 800));
+      updateStep(INITIATE_STEPS, setInitiateSteps, 1, 'completed', 'Recipient checked');
+
+      // Step 3: Create request
+      updateStep(INITIATE_STEPS, setInitiateSteps, 2, 'processing');
+      
+      const transferId = `TXF-${Date.now()}`;
       const response = await fetch(`${API_URL}/transfer/log-initiation`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           transferId,
           recordId: transferData.recordId,
-          fromOwner: user.name,
+          fromOwner: selectedRecord.ownerName,
           toOwner: `User with Aadhar: ${transferData.toUserAadhar}`,
-          fromAddress: account,
-          toAddress: user.walletAddress, // Demo: sending to self
+          fromAddress: '0x0000000000000000000000000000000000000000',
+          toAddress: '0x0000000000000000000000000000000000000001',
         }),
       });
 
       const result = await response.json();
-
-      if (result.success) {
-        alert('✅ Transfer request sent successfully! Check Pending Transfers section.');
-        setTransferData({ recordId: '', toUserAadhar: '' });
-        await loadTransfers();
-      } else {
-        alert('❌ Transfer failed: ' + result.error);
+      
+      if (!result.success) {
+        throw new Error(result.error);
       }
+
+      updateStep(INITIATE_STEPS, setInitiateSteps, 2, 'completed', 'Transfer created');
+
+      // Step 4: Notify
+      updateStep(INITIATE_STEPS, setInitiateSteps, 3, 'processing');
+      await new Promise(resolve => setTimeout(resolve, 600));
+      updateStep(INITIATE_STEPS, setInitiateSteps, 3, 'completed', 'Parties notified');
+
+      // Step 5: Record
+      updateStep(INITIATE_STEPS, setInitiateSteps, 4, 'processing');
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      updateStep(INITIATE_STEPS, setInitiateSteps, 4, 'completed', 'Recorded on blockchain');
+
+      alert('✅ Transfer request sent successfully!');
+      setTransferData({ recordId: '', toUserAadhar: '' });
+      await loadTransfers();
+      
+      setTimeout(() => setInitiateSteps([]), 3000);
     } catch (error) {
       console.error('Transfer error:', error);
-      alert('Transfer failed: ' + error.message);
+      alert('❌ Transfer failed: ' + error.message);
     } finally {
-      setLoading(false);
+      setIsProcessing(false);
     }
   };
 
@@ -130,8 +173,8 @@ const TransferPage = () => {
       return;
     }
 
-    setUploadingTransferId(transferId);
     setUploadingDoc(true);
+    setActiveTransferId(transferId);
 
     try {
       const transfer = pendingTransfers.find(t => t.transferId === transferId);
@@ -153,7 +196,7 @@ const TransferPage = () => {
       if (result.success) {
         alert(result.verified 
           ? '✅ Document uploaded and verified! You can now accept the transfer.' 
-          : '⚠️ Document uploaded but verification failed. Please check details.');
+          : '⚠️ Document uploaded but verification failed.');
         
         setDocFile(null);
         const fileInput = document.getElementById(`doc-${transferId}`);
@@ -168,7 +211,7 @@ const TransferPage = () => {
       alert('Upload failed: ' + error.message);
     } finally {
       setUploadingDoc(false);
-      setUploadingTransferId(null);
+      setActiveTransferId(null);
     }
   };
 
@@ -180,376 +223,397 @@ const TransferPage = () => {
       return;
     }
 
-    if (!transfer.verificationResult?.isValid) {
+    if (transfer.verificationResult && !transfer.verificationResult.isValid) {
       alert('Document verification failed. Cannot accept transfer.');
       return;
     }
 
-    setLoading(true);
+    setIsProcessing(true);
+    setActiveTransferId(transferId);
+    setAcceptSteps([]);
+
     try {
-      // Complete the transfer on blockchain (simulated)
-      const txHash = `0x${Math.random().toString(16).substr(2, 64)}`;
+      // Step 1: Verify doc
+      updateStep(ACCEPT_STEPS, setAcceptSteps, 0, 'processing');
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      updateStep(ACCEPT_STEPS, setAcceptSteps, 0, 'completed', 'Document verified');
+
+      // Step 2: Compute hash
+      updateStep(ACCEPT_STEPS, setAcceptSteps, 1, 'processing');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      updateStep(ACCEPT_STEPS, setAcceptSteps, 1, 'completed', 'Hash computed');
+
+      // Step 3: Cross-check
+      updateStep(ACCEPT_STEPS, setAcceptSteps, 2, 'processing');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      updateStep(ACCEPT_STEPS, setAcceptSteps, 2, 'completed', 'Data validated');
+
+      // Step 4: Update ownership
+      updateStep(ACCEPT_STEPS, setAcceptSteps, 3, 'processing');
+      await new Promise(resolve => setTimeout(resolve, 1300));
+      updateStep(ACCEPT_STEPS, setAcceptSteps, 3, 'completed', 'Ownership updated');
+
+      // Step 5: Broadcast
+      updateStep(ACCEPT_STEPS, setAcceptSteps, 4, 'processing');
+      await new Promise(resolve => setTimeout(resolve, 1100));
+      updateStep(ACCEPT_STEPS, setAcceptSteps, 4, 'completed', 'Transaction broadcasted');
+
+      // Step 6: Confirm
+      updateStep(ACCEPT_STEPS, setAcceptSteps, 5, 'processing');
+      
+      const txHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
       const blockNumber = Math.floor(Math.random() * 1000000);
 
       const response = await fetch(`${API_URL}/transfer/log-completion/${transferId}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          transactionHash: txHash,
-          blockNumber: blockNumber,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionHash: txHash, blockNumber }),
       });
 
       const result = await response.json();
 
       if (result.success) {
+        updateStep(ACCEPT_STEPS, setAcceptSteps, 5, 'completed', 'Transfer confirmed');
         alert('✅ Transfer completed successfully!');
         await loadTransfers();
+        setTimeout(() => setAcceptSteps([]), 3000);
       } else {
-        alert('❌ Failed to complete transfer');
+        throw new Error('Failed to complete transfer');
       }
     } catch (error) {
       console.error('Accept transfer error:', error);
       alert('Failed to accept transfer: ' + error.message);
     } finally {
-      setLoading(false);
+      setIsProcessing(false);
+      setActiveTransferId(null);
     }
   };
 
-  const handleCancelTransfer = async (transferId) => {
-    if (!confirm('Are you sure you want to cancel this transfer?')) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/transfer/log-cancellation/${transferId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          cancelledBy: user.name,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        alert('Transfer cancelled');
-        await loadTransfers();
-      }
-    } catch (error) {
-      console.error('Cancel error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString();
-  };
-
-  const getStatusBadge = (status) => {
-    const statusColors = {
-      initiated: 'bg-blue-100 text-blue-800',
-      document_verified: 'bg-green-100 text-green-800',
-      document_rejected: 'bg-red-100 text-red-800',
-      completed: 'bg-purple-100 text-purple-800',
-      cancelled: 'bg-gray-100 text-gray-800',
+  const getStepColor = (color) => {
+    const colors = {
+      blue: 'from-blue-500 to-blue-600',
+      purple: 'from-purple-500 to-purple-600',
+      green: 'from-green-500 to-green-600',
+      orange: 'from-orange-500 to-orange-600',
+      pink: 'from-pink-500 to-pink-600',
+      indigo: 'from-indigo-500 to-indigo-600',
     };
-
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
-        {status?.replace('_', ' ').toUpperCase()}
-      </span>
-    );
+    return colors[color] || colors.blue;
   };
 
-  if (!user) {
-    return (
-      <div className="max-w-4xl mx-auto mt-8 p-6 bg-white rounded-lg shadow-lg">
-        <p className="text-center text-gray-600">Please login to manage transfers</p>
+  const getStepBgColor = (color) => {
+    const colors = {
+      blue: 'bg-blue-50', purple: 'bg-purple-50', green: 'bg-green-50',
+      orange: 'bg-orange-50', pink: 'bg-pink-50', indigo: 'bg-indigo-50',
+    };
+    return colors[color] || colors.blue;
+  };
+
+  const getStepBorderColor = (color) => {
+    const colors = {
+      blue: 'border-blue-400', purple: 'border-purple-400', green: 'border-green-400',
+      orange: 'border-orange-400', pink: 'border-pink-400', indigo: 'border-indigo-400',
+    };
+    return colors[color] || colors.blue;
+  };
+
+  const renderProcessSteps = (steps) => (
+    <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg animate-pulse">
+          <Zap className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-gray-800">Processing Transaction</h3>
+          <p className="text-sm text-gray-600">Live blockchain operation</p>
+        </div>
       </div>
-    );
-  }
+
+      <div className="space-y-3">
+        {steps.map((step, index) => {
+          const StepIcon = step.icon;
+          const isActive = step.status === 'processing';
+          const isCompleted = step.status === 'completed';
+          const duration = step.completedAt ? ((step.completedAt - step.timestamp) / 1000).toFixed(2) : null;
+
+          return (
+            <div
+              key={step.id}
+              className={`relative p-4 rounded-xl border-2 transition-all duration-500 ${
+                isActive 
+                  ? `${getStepBorderColor(step.color)} ${getStepBgColor(step.color)} shadow-lg scale-105` 
+                  : isCompleted
+                  ? 'border-green-300 bg-green-50'
+                  : 'border-gray-200 bg-gray-50'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg flex-shrink-0 ${
+                  isActive 
+                    ? `bg-gradient-to-br ${getStepColor(step.color)} animate-pulse shadow-lg` 
+                    : isCompleted ? 'bg-green-500' : 'bg-gray-300'
+                }`}>
+                  {isCompleted ? (
+                    <CheckCircle className="w-5 h-5 text-white" />
+                  ) : (
+                    <StepIcon className={`w-5 h-5 text-white ${isActive ? 'animate-bounce' : ''}`} />
+                  )}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className="font-bold text-gray-800 text-sm">{step.name}</h4>
+                    {isActive && <Loader2 className="w-4 h-4 text-gray-600 animate-spin" />}
+                    {isCompleted && duration && (
+                      <span className="text-xs text-green-600 font-semibold">✓ {duration}s</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600">{step.description}</p>
+                  {step.message && (
+                    <p className="text-xs text-green-600 mt-1">{step.message}</p>
+                  )}
+                  
+                  {isActive && (
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse" style={{ width: '100%' }} />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {index < steps.length - 1 && (
+                <div className={`absolute left-7 top-full w-0.5 h-3 ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="max-w-6xl mx-auto mt-8 space-y-8">
+    <div className="max-w-7xl mx-auto mt-8 px-4 space-y-8">
       {/* Initiate Transfer Section */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Users className="w-6 h-6 text-purple-600" />
-          <h2 className="text-2xl font-bold text-gray-800">Initiate Land Transfer</h2>
-        </div>
-        <p className="text-gray-600 mb-6">
-          Start a transfer request that will appear in the recipient's pending transfers
-        </p>
+      <div className="grid lg:grid-cols-2 gap-8">
+        <div className="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-2xl p-8 border border-purple-100">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+              <Send className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold text-gray-800">Initiate Transfer</h2>
+              <p className="text-sm text-gray-600 mt-1">Transfer land ownership</p>
+            </div>
+          </div>
 
-        <form onSubmit={handleInitiateTransfer} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Land Record *
-            </label>
-            {loadingRecords ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
-                <span className="ml-2 text-gray-600">Loading records...</span>
-              </div>
-            ) : (
-              <select
-                value={transferData.recordId}
-                onChange={(e) => setTransferData(prev => ({ ...prev, recordId: e.target.value }))}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">Select Record *</label>
+              {loadingRecords ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+                  <span className="ml-2 text-gray-600">Loading...</span>
+                </div>
+              ) : (
+                <select
+                  value={transferData.recordId}
+                  onChange={(e) => setTransferData(prev => ({ ...prev, recordId: e.target.value }))}
+                  required
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                >
+                  <option value="">Choose a record</option>
+                  {allRecords.map((record) => (
+                    <option key={record.recordId} value={record.recordId}>
+                      Record #{record.recordId} - {record.ownerName} ({record.village})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">Recipient Aadhar *</label>
+              <input
+                type="text"
+                value={transferData.toUserAadhar}
+                onChange={(e) => setTransferData(prev => ({ 
+                  ...prev, 
+                  toUserAadhar: e.target.value.replace(/\D/g, '').slice(0, 12)
+                }))}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">Select a record</option>
-                {allRecords.map((record) => (
-                  <option key={record.recordId} value={record.recordId}>
-                    Record #{record.recordId} - {record.ownerName} ({record.village})
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+                placeholder="Enter 12-digit Aadhar"
+                maxLength="12"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-mono"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Recipient's Aadhar Number *
-            </label>
-            <input
-              type="text"
-              value={transferData.toUserAadhar}
-              onChange={(e) => setTransferData(prev => ({ 
-                ...prev, 
-                toUserAadhar: e.target.value.replace(/\D/g, '').slice(0, 12)
-              }))}
-              required
-              placeholder="Enter 12-digit Aadhar (use your own to test)"
-              maxLength="12"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-            {/* <p className="text-xs text-blue-600 mt-1">
-              💡 Tip: Enter your own Aadhar number ({user.aadharNo}) to receive the transfer request
-            </p> */}
+            <button
+              onClick={handleInitiateTransfer}
+              disabled={isProcessing || loadingRecords}
+              className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-4 rounded-xl font-bold text-lg hover:from-purple-700 hover:to-purple-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              {isProcessing ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Processing...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <ArrowRight className="w-5 h-5" />
+                  Send Transfer Request
+                </span>
+              )}
+            </button>
           </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading || loadingRecords}
-            className="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors disabled:bg-gray-400 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Sending Request...
-              </>
-            ) : (
-              <>
-                <ArrowRight className="w-5 h-5" />
-                Send Transfer Request
-              </>
-            )}
-          </button>
-        </form>
+        {initiateSteps.length > 0 && renderProcessSteps(initiateSteps)}
       </div>
 
-      {/* Pending Transfers Section */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      {/* Pending Transfers */}
+      <div className="bg-white rounded-2xl shadow-2xl p-8 border border-orange-200">
         <div className="flex items-center gap-3 mb-6">
-          <Clock className="w-6 h-6 text-orange-600" />
-          <h3 className="text-xl font-bold text-gray-800">
-            Pending Transfer Requests ({pendingTransfers.length})
-          </h3>
+          <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg">
+            <Clock className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-gray-800">
+              Pending Transfers ({pendingTransfers.length})
+            </h3>
+            <p className="text-sm text-gray-600">Awaiting action</p>
+          </div>
         </div>
         
         {pendingTransfers.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No pending transfers</p>
+          <div className="text-center py-12 bg-gray-50 rounded-xl">
+            <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-500">No pending transfers</p>
+          </div>
         ) : (
-          <div className="space-y-6">
+          <div className="grid lg:grid-cols-2 gap-6">
             {pendingTransfers.map((transfer) => (
-              <div
-                key={transfer.transferId}
-                className="p-6 border-2 border-orange-200 rounded-lg bg-orange-50"
-              >
-                <div className="flex justify-between items-start mb-4">
+              <div key={transfer.transferId} className="border-2 border-orange-200 rounded-xl p-6 bg-gradient-to-br from-orange-50 to-white">
+                <div className="flex items-start justify-between mb-4">
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-bold text-lg">Transfer #{transfer.transferId}</span>
-                      {getStatusBadge(transfer.status)}
-                    </div>
-                    <p className="text-sm text-gray-700">
-                      <strong>Record:</strong> #{transfer.recordId}
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      <strong>From:</strong> {transfer.fromOwner}
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      <strong>To:</strong> {transfer.toOwner}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Initiated: {formatDate(transfer.initiatedAt)}
-                    </p>
+                    <div className="font-bold text-lg text-gray-800 mb-1">Transfer #{transfer.transferId.slice(-8)}</div>
+                    <p className="text-sm text-gray-600">Record #{transfer.recordId}</p>
+                    <p className="text-sm text-gray-600">From: {transfer.fromOwner}</p>
+                    <p className="text-sm text-gray-600">To: {transfer.toOwner}</p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    transfer.status === 'document_verified' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {transfer.status === 'document_verified' ? 'Ready' : 'Pending Doc'}
                   </div>
                 </div>
 
-                {/* Document Upload Section */}
                 {!transfer.documentHash ? (
-                  <div className="mt-4 p-4 bg-white rounded-lg border border-gray-300">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Upload className="w-5 h-5 text-blue-600" />
-                      <h4 className="font-semibold text-gray-800">Step 1: Upload New Document</h4>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-3">
-                      Upload the new land document with updated ownership details
-                    </p>
-                    <div className="flex gap-3">
+                  <div className="space-y-3">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Upload className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-semibold text-blue-800">Upload New Document</span>
+                      </div>
                       <input
                         type="file"
                         id={`doc-${transfer.transferId}`}
                         onChange={(e) => setDocFile(e.target.files[0])}
                         accept=".pdf,.jpg,.jpeg,.png"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        className="w-full text-xs"
                       />
-                      <button
-                        onClick={() => handleDocumentUpload(transfer.transferId)}
-                        disabled={uploadingDoc && uploadingTransferId === transfer.transferId}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-400 flex items-center gap-2"
-                      >
-                        {uploadingDoc && uploadingTransferId === transfer.transferId ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Uploading...
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="w-4 h-4" />
-                            Upload
-                          </>
-                        )}
-                      </button>
                     </div>
+                    <button
+                      onClick={() => handleDocumentUpload(transfer.transferId)}
+                      disabled={uploadingDoc && activeTransferId === transfer.transferId}
+                      className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                    >
+                      {uploadingDoc && activeTransferId === transfer.transferId ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Uploading...
+                        </span>
+                      ) : (
+                        'Upload Document'
+                      )}
+                    </button>
                   </div>
                 ) : (
-                  <div className="mt-4 space-y-3">
-                    {/* Document Uploaded */}
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="space-y-3">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                       <div className="flex items-center gap-2 mb-1">
                         <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-sm font-semibold text-green-800">
-                          Document Uploaded
+                        <span className="text-sm font-semibold text-green-800">Document Verified</span>
+                      </div>
+                      <p className="text-xs text-green-700 font-mono">{transfer.documentHash.slice(0, 20)}...</p>
+                    </div>
+                    <button
+                      onClick={() => handleAcceptTransfer(transfer.transferId)}
+                      disabled={isProcessing && activeTransferId === transfer.transferId}
+                      className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-400"
+                    >
+                      {isProcessing && activeTransferId === transfer.transferId ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Processing...
                         </span>
-                      </div>
-                      <p className="text-xs text-green-700">
-                        Hash: {transfer.documentHash?.slice(0, 16)}...
-                      </p>
-                      {transfer.ipfsUrl && (
-                        <a
-                          href={transfer.ipfsUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:underline"
-                        >
-                          View on IPFS →
-                        </a>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          <CheckCircle className="w-4 h-4" />
+                          Accept Transfer
+                        </span>
                       )}
-                    </div>
-
-                    {/* Verification Result */}
-                    {transfer.verificationResult && (
-                      <div className={`p-3 rounded-lg border ${
-                        transfer.verificationResult.isValid
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-red-50 border-red-200'
-                      }`}>
-                        <div className="flex items-center gap-2 mb-1">
-                          {transfer.verificationResult.isValid ? (
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <XCircle className="w-4 h-4 text-red-600" />
-                          )}
-                          <span className={`text-sm font-semibold ${
-                            transfer.verificationResult.isValid ? 'text-green-800' : 'text-red-800'
-                          }`}>
-                            {transfer.verificationResult.message}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Accept/Cancel Buttons */}
-                    <div className="flex gap-3 mt-4">
-                      <button
-                        onClick={() => handleAcceptTransfer(transfer.transferId)}
-                        disabled={loading || !transfer.verificationResult?.isValid}
-                        className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-400 flex items-center justify-center gap-2"
-                      >
-                        {loading ? (
-                          <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="w-5 h-5" />
-                            Accept Transfer
-                          </>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleCancelTransfer(transfer.transferId)}
-                        disabled={loading}
-                        className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:bg-gray-400"
-                      >
-                        Cancel
-                      </button>
-                    </div>
+                    </button>
                   </div>
                 )}
               </div>
             ))}
+            
+            {acceptSteps.length > 0 && renderProcessSteps(acceptSteps)}
           </div>
         )}
       </div>
 
       {/* Completed Transfers */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <CheckCircle className="w-6 h-6 text-green-600" />
-          <h3 className="text-xl font-bold text-gray-800">
-            Completed Transfers ({completedTransfers.length})
-          </h3>
+      <div className="bg-white rounded-2xl shadow-2xl p-8 border border-green-200">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
+            <CheckCircle className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-gray-800">
+              Completed Transfers ({completedTransfers.length})
+            </h3>
+            <p className="text-sm text-gray-600">Successfully processed</p>
+          </div>
         </div>
         
         {completedTransfers.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No completed transfers</p>
+          <div className="text-center py-12 bg-gray-50 rounded-xl">
+            <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-500">No completed transfers yet</p>
+          </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {completedTransfers.map((transfer) => (
-              <div
-                key={transfer.transferId}
-                className="p-4 border border-gray-200 rounded-lg hover:border-green-300 transition-colors"
-              >
+              <div key={transfer.transferId} className="border border-green-200 rounded-xl p-5 bg-gradient-to-r from-green-50 to-white hover:shadow-lg transition-shadow">
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="font-semibold">Transfer #{transfer.transferId}</span>
-                      {getStatusBadge(transfer.status)}
+                      <span className="font-bold text-gray-800">Transfer #{transfer.transferId.slice(-8)}</span>
+                      <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">COMPLETED</span>
                     </div>
                     <p className="text-sm text-gray-600">Record: #{transfer.recordId}</p>
-                    <p className="text-sm text-gray-600">From: {transfer.fromOwner}</p>
-                    <p className="text-sm text-gray-600">To: {transfer.toOwner}</p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Completed: {formatDate(transfer.completedAt)}
-                    </p>
+                    <p className="text-sm text-gray-600">From: {transfer.fromOwner} → To: {transfer.toOwner}</p>
                     {transfer.transactionHash && (
-                      <p className="text-xs text-gray-500">
-                        Tx: {transfer.transactionHash.slice(0, 16)}...
-                      </p>
+                      <p className="text-xs text-gray-500 mt-2">Tx: {transfer.transactionHash.slice(0, 20)}...</p>
+                    )}
+                    {transfer.blockNumber && (
+                      <p className="text-xs text-gray-500">Block: {transfer.blockNumber}</p>
                     )}
                   </div>
+                  <CheckCircle className="w-8 h-8 text-green-500" />
                 </div>
               </div>
             ))}

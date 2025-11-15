@@ -22,5 +22,17 @@
     "role": "user",
     "walletAddress": "0x4a389575be39171fa8a7510eb43c2dc4319d7de5",
     "createdAt": "2025-11-14T14:28:28.153Z"
+  },
+  {
+    "id": "1763174073021",
+    "name": "GARV THAKRE",
+    "aadharNo": "123456789023",
+    "phoneNo": "9691383647",
+    "address": "ramnagar bhilai",
+    "password": "123456",
+    "patwariId": "PAT1234567",
+    "role": "admin",
+    "walletAddress": "0x50551393547d619946dd2589f53de9b497bb0c8b",
+    "createdAt": "2025-11-15T02:34:33.021Z"
   }
 ]

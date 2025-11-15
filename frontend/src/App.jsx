@@ -11,6 +11,7 @@ import ALanding from "./pages/A-Landing";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./components/LanguageSwitcher";
 import HistoryPage from "./pages/HistoryPage";
+import AuthPage from "./pages/SignupPage";
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -193,7 +194,7 @@ const AppContent = () => {
       <div className="container mx-auto px-4 py-2">
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/signup" element={< AuthPage />} />
 
           <Route
             path="/"
