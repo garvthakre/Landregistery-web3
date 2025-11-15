@@ -39,7 +39,9 @@ router.post('/log-upload', (req, res) => {
       ipfsUrl,
       transactionHash, 
       blockNumber,
-      uploadedBy 
+      uploadedBy,
+      userId,      // NEW: user ID from auth
+      userAadhar   // NEW: user aadhar from auth
     } = req.body;
 
     const history = readUploadHistory();
@@ -54,6 +56,8 @@ router.post('/log-upload', (req, res) => {
       transactionHash,
       blockNumber,
       uploadedBy,
+      userId: userId || null,           // NEW
+      userAadhar: userAadhar || null,   // NEW
       uploadedAt: new Date().toISOString()
     };
 
@@ -96,6 +100,54 @@ router.get('/history/record/:recordId', (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to get upload history' 
+    });
+  }
+});
+
+/**
+ * NEW: Get uploads by user ID
+ */
+router.get('/history/user/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const history = readUploadHistory();
+    
+    const userUploads = history.filter(u => u.userId === userId);
+
+    res.json({
+      success: true,
+      count: userUploads.length,
+      uploads: userUploads
+    });
+  } catch (error) {
+    console.error('Get user uploads error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get user uploads' 
+    });
+  }
+});
+
+/**
+ * NEW: Get uploads by user Aadhar
+ */
+router.get('/history/aadhar/:aadhar', (req, res) => {
+  try {
+    const { aadhar } = req.params;
+    const history = readUploadHistory();
+    
+    const userUploads = history.filter(u => u.userAadhar === aadhar);
+
+    res.json({
+      success: true,
+      count: userUploads.length,
+      uploads: userUploads
+    });
+  } catch (error) {
+    console.error('Get user uploads by aadhar error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get user uploads' 
     });
   }
 });

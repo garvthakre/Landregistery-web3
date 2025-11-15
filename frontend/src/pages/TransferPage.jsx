@@ -1,80 +1,80 @@
 import React, { useState, useEffect } from 'react';
 import { Users, ArrowRight, Clock, Loader2, CheckCircle } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
+import { useAuth } from '../context/AuthContext';
+import { API_URL } from '../config/api';
 
 const TransferPage = () => {
-  const { account, contract, loading, setLoading } = useWallet();
+  const { account } = useWallet();
+  const { user } = useAuth();  // ADD THIS
   const [myRecords, setMyRecords] = useState([]);
   const [pendingTransfers, setPendingTransfers] = useState([]);
   const [transferData, setTransferData] = useState({
     recordId: '',
-    newOwnerAddress: '',
+    toUserAadhar: '',  // Changed from newOwnerAddress to Aadhar
   });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (contract && account) {
-      loadRecords();
+    if (user) {
+      loadMyRecords();
       loadPendingTransfers();
     }
-  }, [contract, account]);
+  }, [user]);
 
-  const loadRecords = async () => {
+  // Load records by user ID instead of wallet
+  const loadMyRecords = async () => {
     try {
-      const recordIds = await contract.getRecordsByOwner(account);
-      const records = await Promise.all(
-        recordIds.map(async (id) => {
-          const record = await contract.getRecord(id);
-          return {
-            id: id.toString(),
-            ownerName: record[0],
-            village: record[1],
-            currentOwner: record[5],
-          };
-        })
-      );
-      setMyRecords(records);
+      const response = await fetch(`${API_URL}/upload/history/user/${user.id}`);
+      const result = await response.json();
+
+      if (result.success) {
+        setMyRecords(result.uploads);
+      }
     } catch (error) {
       console.error('Error loading records:', error);
     }
   };
 
   const loadPendingTransfers = async () => {
-    try {
-      const transferIds = await contract.getPendingTransfers(account);
-      const transfers = await Promise.all(
-        transferIds.map(async (id) => {
-          const record = await contract.getRecord(id);
-          return {
-            id: id.toString(),
-            ownerName: record[0],
-            village: record[1],
-            currentOwner: record[5],
-          };
-        })
-      );
-      setPendingTransfers(transfers);
-    } catch (error) {
-      console.error('Error loading pending transfers:', error);
-    }
+    // For now, keep empty. Can be implemented later if needed
+    setPendingTransfers([]);
   };
 
   const handleInitiateTransfer = async (e) => {
     e.preventDefault();
-    // if (!contract) {
-    //   alert('Please connect your wallet first');
-    //   return;
-    // }
+
+    if (!transferData.toUserAadhar || transferData.toUserAadhar.length !== 12) {
+      alert('Please enter a valid 12-digit Aadhar number');
+      return;
+    }
 
     setLoading(true);
     try {
-      const tx = await contract.initiateOwnershipTransfer(
-        transferData.recordId,
-        transferData.newOwnerAddress
-      );
-      await tx.wait();
-      alert('Transfer initiated successfully!');
-      setTransferData({ recordId: '', newOwnerAddress: '' });
-      await loadRecords();
+      console.log('Initiating transfer for record:', transferData.recordId);
+      console.log('To Aadhar:', transferData.toUserAadhar);
+      
+      const response = await fetch(`${API_URL}/upload/transfer-ownership`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recordId: transferData.recordId,
+          fromUserId: user.id,
+          toUserAadhar: transferData.toUserAadhar,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('✅ Ownership transferred successfully!');
+        setTransferData({ recordId: '', toUserAadhar: '' });
+        await loadMyRecords();
+      } else {
+        alert('❌ Transfer failed: ' + result.error);
+      }
     } catch (error) {
       console.error('Transfer error:', error);
       alert('Transfer failed: ' + error.message);
@@ -83,29 +83,16 @@ const TransferPage = () => {
     }
   };
 
-  const handleAcceptTransfer = async (recordId) => {
-    if (!contract) return;
-
-    setLoading(true);
-    try {
-      const tx = await contract.acceptOwnershipTransfer(recordId);
-      await tx.wait();
-      alert('Transfer accepted successfully!');
-      await loadPendingTransfers();
-      await loadRecords();
-    } catch (error) {
-      console.error('Accept transfer error:', error);
-      alert('Failed to accept transfer: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
+  const handleAcceptTransfer = async (transferId) => {
+    // Not needed for demo - transfers are instant
+    alert('Transfer acceptance not needed - transfers are instant in demo mode');
   };
 
-  if (!account) {
+  if (!user) {
     return (
       <div className="max-w-4xl mx-auto mt-8 p-6 bg-white rounded-lg shadow-lg">
         <p className="text-center text-gray-600">
-          Please connect your wallet to manage transfers
+          Please login to manage transfers
         </p>
       </div>
     );
@@ -122,7 +109,7 @@ const TransferPage = () => {
           </h2>
         </div>
         <p className="text-gray-600 mb-6">
-          Transfer ownership to another wallet
+          Transfer land ownership to another user using their Aadhar number (instant for demo)
         </p>
 
         <form onSubmit={handleInitiateTransfer} className="space-y-4">
@@ -141,8 +128,8 @@ const TransferPage = () => {
             >
               <option value="">Select a record</option>
               {myRecords.map((record) => (
-                <option key={record.id} value={record.id}>
-                  ID: {record.id} - {record.ownerName} ({record.village})
+                <option key={record.recordId} value={record.recordId}>
+                  ID: {record.recordId} - {record.ownerName} ({record.village})
                 </option>
               ))}
             </select>
@@ -150,19 +137,24 @@ const TransferPage = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              New Owner Address
+              Recipient's Aadhar Number
             </label>
             <input
               type="text"
-              value={transferData.newOwnerAddress}
+              value={transferData.toUserAadhar}
               onChange={(e) => setTransferData(prev => ({ 
                 ...prev, 
-                newOwnerAddress: e.target.value 
+                toUserAadhar: e.target.value 
               }))}
               required
-              placeholder="0x..."
+              placeholder="Enter 12-digit Aadhar number"
+              maxLength="12"
+              pattern="\d{12}"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Enter the Aadhar number of the new owner
+            </p>
           </div>
 
           <button
@@ -173,12 +165,12 @@ const TransferPage = () => {
             {loading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Processing...
+                Transferring...
               </>
             ) : (
               <>
                 <ArrowRight className="w-5 h-5" />
-                Initiate Transfer
+                Transfer Ownership
               </>
             )}
           </button>
@@ -194,13 +186,13 @@ const TransferPage = () => {
           <div className="space-y-3">
             {myRecords.map((record) => (
               <div
-                key={record.id}
+                key={record.recordId}
                 className="p-4 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors"
               >
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-semibold text-gray-800">
-                      Record ID: {record.id}
+                      Record ID: {record.recordId}
                     </p>
                     <p className="text-sm text-gray-600">
                       Owner: {record.ownerName}
@@ -208,7 +200,20 @@ const TransferPage = () => {
                     <p className="text-sm text-gray-600">
                       Village: {record.village}
                     </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Uploaded: {new Date(record.uploadedAt).toLocaleDateString()}
+                    </p>
                   </div>
+                  {record.ipfsUrl && (
+                    <a
+                      href={record.ipfsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline text-sm"
+                    >
+                      View Document
+                    </a>
+                  )}
                 </div>
               </div>
             ))}
@@ -216,8 +221,8 @@ const TransferPage = () => {
         )}
       </div>
 
-      {/* Pending Transfers Section */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      {/* Pending Transfers Section - Hidden for demo */}
+      {/* <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex items-center gap-3 mb-4">
           <Clock className="w-6 h-6 text-orange-600" />
           <h3 className="text-xl font-bold text-gray-800">
@@ -228,47 +233,10 @@ const TransferPage = () => {
           Accept ownership transfers sent to you
         </p>
 
-        {pendingTransfers.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">
-            No pending transfers
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {pendingTransfers.map((record) => (
-              <div
-                key={record.id}
-                className="p-4 border border-orange-200 rounded-lg bg-orange-50"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-800">
-                      Record ID: {record.id}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Owner: {record.ownerName}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Village: {record.village}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      From: {record.currentOwner.slice(0, 6)}...
-                      {record.currentOwner.slice(-4)}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleAcceptTransfer(record.id)}
-                    disabled={loading}
-                    className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors disabled:bg-gray-400 flex items-center gap-2"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Accept
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        <p className="text-gray-500 text-center py-8">
+          Transfers are instant in demo mode
+        </p>
+      </div> */}
     </div>
   );
 };
