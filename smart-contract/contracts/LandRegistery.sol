@@ -3,11 +3,20 @@ pragma solidity ^0.8.19;
 
 /**
  * @title LandRegistry
- * @dev Decentralized Land Registry System for Tribal Regions with Document Verification
+ * @dev Decentralized Land Registry System with Area-based Verification
  */
 contract LandRegistry {
     
     // ==================== STRUCTS ====================
+    
+    struct AreaInfo {
+        string claimedArea;      // Area from document (e.g., "2.5 acres")
+        string verifiedArea;     // Area from geotagging
+        string unit;             // Unit (acres, hectares, sq meters)
+        bool verified;
+        uint256 verifiedAt;
+        address verifiedBy;
+    }
     
     struct LandRecord {
         string ownerName;
@@ -19,6 +28,9 @@ contract LandRegistry {
         address uploadedBy;
         address pendingOwner;
         address[] ownershipHistory;
+        AreaInfo areaInfo;
+        bool areaVerified;
+        bool pendingAreaVerification;
     }
     
     struct TransferRequest {
@@ -36,8 +48,10 @@ contract LandRegistry {
     
     mapping(uint256 => LandRecord) private landRecords;
     mapping(uint256 => TransferRequest) public transferRequests;
+    mapping(address => bool) public patwariAdmins;
     uint256 private recordCount;
     uint256 private transferRequestCount;
+    address public owner;
     
     // ==================== EVENTS ====================
     
@@ -48,26 +62,25 @@ contract LandRegistry {
         string ipfsCID
     );
     
+    event AreaVerificationRequested(
+        uint256 indexed recordId,
+        string claimedArea,
+        string unit,
+        uint256 timestamp
+    );
+    
+    event AreaVerificationCompleted(
+        uint256 indexed recordId,
+        bool matched,
+        address indexed verifiedBy,
+        uint256 timestamp
+    );
+    
     event TransferInitiated(
         uint256 indexed transferId,
         uint256 indexed recordId,
         address indexed from,
         address to,
-        uint256 timestamp
-    );
-    
-    event DocumentSubmittedForVerification(
-        uint256 indexed transferId,
-        uint256 indexed recordId,
-        string newDocumentHash,
-        string newIpfsCID,
-        uint256 timestamp
-    );
-    
-    event DocumentVerified(
-        uint256 indexed transferId,
-        uint256 indexed recordId,
-        bool verified,
         uint256 timestamp
     );
     
@@ -80,13 +93,20 @@ contract LandRegistry {
         uint256 timestamp
     );
     
-    event TransferCancelled(
-        uint256 indexed transferId,
-        uint256 indexed recordId,
-        address indexed cancelledBy
-    );
+    event PatwariAdded(address indexed patwari);
+    event PatwariRemoved(address indexed patwari);
     
     // ==================== MODIFIERS ====================
+    
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can perform this action");
+        _;
+    }
+    
+    modifier onlyPatwari() {
+        require(patwariAdmins[msg.sender], "Only Patwari can perform this action");
+        _;
+    }
     
     modifier onlyCurrentOwner(uint256 _recordId) {
         require(
@@ -101,9 +121,24 @@ contract LandRegistry {
         _;
     }
     
-    modifier transferExists(uint256 _transferId) {
-        require(_transferId < transferRequestCount, "Transfer request does not exist");
-        _;
+    // ==================== CONSTRUCTOR ====================
+    
+    constructor() {
+        owner = msg.sender;
+        patwariAdmins[msg.sender] = true;
+    }
+    
+    // ==================== ADMIN FUNCTIONS ====================
+    
+    function addPatwari(address _patwari) external onlyOwner {
+        require(_patwari != address(0), "Invalid address");
+        patwariAdmins[_patwari] = true;
+        emit PatwariAdded(_patwari);
+    }
+    
+    function removePatwari(address _patwari) external onlyOwner {
+        patwariAdmins[_patwari] = false;
+        emit PatwariRemoved(_patwari);
     }
     
     // ==================== CORE FUNCTIONS ====================
@@ -112,12 +147,16 @@ contract LandRegistry {
         string memory _ownerName,
         string memory _village,
         string memory _ipfsCID,
-        string memory _documentHash
+        string memory _documentHash,
+        string memory _claimedArea,
+        string memory _unit
     ) external returns (uint256) {
         require(bytes(_ownerName).length > 0, "Owner name required");
         require(bytes(_village).length > 0, "Village name required");
         require(bytes(_ipfsCID).length > 0, "IPFS CID required");
         require(bytes(_documentHash).length > 0, "Document hash required");
+        require(bytes(_claimedArea).length > 0, "Area required");
+        require(bytes(_unit).length > 0, "Unit required");
         
         uint256 newRecordId = recordCount;
         
@@ -132,11 +171,53 @@ contract LandRegistry {
         newRecord.pendingOwner = address(0);
         newRecord.ownershipHistory.push(msg.sender);
         
+        newRecord.areaInfo = AreaInfo({
+            claimedArea: _claimedArea,
+            verifiedArea: "",
+            unit: _unit,
+            verified: false,
+            verifiedAt: 0,
+            verifiedBy: address(0)
+        });
+        
+        newRecord.areaVerified = false;
+        newRecord.pendingAreaVerification = true;
+        
         recordCount++;
         
         emit RecordCreated(newRecordId, msg.sender, _village, _ipfsCID);
+        emit AreaVerificationRequested(newRecordId, _claimedArea, _unit, block.timestamp);
         
         return newRecordId;
+    }
+    
+    function verifyArea(
+        uint256 _recordId,
+        string memory _verifiedArea
+    ) 
+        external 
+        onlyPatwari
+        recordExists(_recordId)
+    {
+        require(landRecords[_recordId].pendingAreaVerification, "No pending verification");
+        require(bytes(_verifiedArea).length > 0, "Verified area required");
+        
+        LandRecord storage record = landRecords[_recordId];
+        
+        record.areaInfo.verifiedArea = _verifiedArea;
+        record.areaInfo.verified = true;
+        record.areaInfo.verifiedAt = block.timestamp;
+        record.areaInfo.verifiedBy = msg.sender;
+        
+        // Compare areas (exact match handled off-chain with tolerance)
+        bool matched = (
+            keccak256(bytes(_verifiedArea)) == keccak256(bytes(record.areaInfo.claimedArea))
+        );
+        
+        record.areaVerified = matched;
+        record.pendingAreaVerification = false;
+        
+        emit AreaVerificationCompleted(_recordId, matched, msg.sender, block.timestamp);
     }
     
     function getRecord(uint256 _recordId) 
@@ -152,7 +233,12 @@ contract LandRegistry {
             address currentOwner,
             address uploadedBy,
             address pendingOwner,
-            address[] memory ownershipHistory
+            address[] memory ownershipHistory,
+            string memory claimedArea,
+            string memory verifiedArea,
+            string memory unit,
+            bool areaVerified,
+            bool pendingAreaVerification
         ) 
     {
         LandRecord storage record = landRecords[_recordId];
@@ -165,7 +251,12 @@ contract LandRegistry {
             record.currentOwner,
             record.uploadedBy,
             record.pendingOwner,
-            record.ownershipHistory
+            record.ownershipHistory,
+            record.areaInfo.claimedArea,
+            record.areaInfo.verifiedArea,
+            record.areaInfo.unit,
+            record.areaVerified,
+            record.pendingAreaVerification
         );
     }
     
@@ -173,11 +264,30 @@ contract LandRegistry {
         return recordCount;
     }
     
+    function getPendingAreaVerifications() external view returns (uint256[] memory) {
+        uint256 pendingCount = 0;
+        
+        for (uint256 i = 0; i < recordCount; i++) {
+            if (landRecords[i].pendingAreaVerification) {
+                pendingCount++;
+            }
+        }
+        
+        uint256[] memory pendingRecords = new uint256[](pendingCount);
+        uint256 currentIndex = 0;
+        
+        for (uint256 i = 0; i < recordCount; i++) {
+            if (landRecords[i].pendingAreaVerification) {
+                pendingRecords[currentIndex] = i;
+                currentIndex++;
+            }
+        }
+        
+        return pendingRecords;
+    }
+    
     // ==================== TRANSFER FUNCTIONS ====================
     
-    /**
-     * @dev Step 1: Initiate transfer request
-     */
     function initiateTransfer(uint256 _recordId, address _newOwner)
         external
         recordExists(_recordId)
@@ -190,6 +300,7 @@ contract LandRegistry {
             landRecords[_recordId].pendingOwner == address(0),
             "Transfer already pending"
         );
+        require(landRecords[_recordId].areaVerified, "Area not verified");
         
         uint256 transferId = transferRequestCount;
         
@@ -210,140 +321,6 @@ contract LandRegistry {
         emit TransferInitiated(transferId, _recordId, msg.sender, _newOwner, block.timestamp);
         
         return transferId;
-    }
-    
-    /**
-     * @dev Step 2: Submit new document for verification
-     */
-    function submitTransferDocument(
-        uint256 _transferId,
-        string memory _newDocumentHash,
-        string memory _newIpfsCID
-    )
-        external
-        transferExists(_transferId)
-    {
-        TransferRequest storage transfer = transferRequests[_transferId];
-        
-        require(transfer.isActive, "Transfer request is not active");
-        require(msg.sender == transfer.toOwner, "Only new owner can submit document");
-        require(bytes(_newDocumentHash).length > 0, "Document hash required");
-        require(bytes(_newIpfsCID).length > 0, "IPFS CID required");
-        
-        transfer.newDocumentHash = _newDocumentHash;
-        transfer.newIpfsCID = _newIpfsCID;
-        
-        emit DocumentSubmittedForVerification(
-            _transferId,
-            transfer.recordId,
-            _newDocumentHash,
-            _newIpfsCID,
-            block.timestamp
-        );
-    }
-    
-    /**
-     * @dev Step 3: Verify document (can be called by backend after AI verification)
-     */
-    function verifyTransferDocument(uint256 _transferId, bool _verified)
-        external
-        transferExists(_transferId)
-    {
-        TransferRequest storage transfer = transferRequests[_transferId];
-        
-        require(transfer.isActive, "Transfer request is not active");
-        require(bytes(transfer.newDocumentHash).length > 0, "No document submitted yet");
-        
-        transfer.documentVerified = _verified;
-        
-        emit DocumentVerified(_transferId, transfer.recordId, _verified, block.timestamp);
-    }
-    
-    /**
-     * @dev Step 4: Accept transfer (after document verification)
-     */
-    function acceptTransfer(uint256 _transferId)
-        external
-        transferExists(_transferId)
-    {
-        TransferRequest storage transfer = transferRequests[_transferId];
-        
-        require(transfer.isActive, "Transfer request is not active");
-        require(msg.sender == transfer.toOwner, "Only new owner can accept");
-        require(transfer.documentVerified, "Document not verified yet");
-        
-        LandRecord storage record = landRecords[transfer.recordId];
-        
-        // Update record with new document
-        record.ipfsCID = transfer.newIpfsCID;
-        record.documentHash = transfer.newDocumentHash;
-        record.currentOwner = transfer.toOwner;
-        record.ownershipHistory.push(transfer.toOwner);
-        record.pendingOwner = address(0);
-        record.timestamp = block.timestamp;
-        
-        // Mark transfer as completed
-        transfer.isActive = false;
-        
-        emit TransferCompleted(
-            _transferId,
-            transfer.recordId,
-            transfer.fromOwner,
-            transfer.toOwner,
-            transfer.newDocumentHash,
-            block.timestamp
-        );
-    }
-    
-    /**
-     * @dev Cancel transfer request
-     */
-    function cancelTransfer(uint256 _transferId)
-        external
-        transferExists(_transferId)
-    {
-        TransferRequest storage transfer = transferRequests[_transferId];
-        
-        require(transfer.isActive, "Transfer already completed or cancelled");
-        require(
-            msg.sender == transfer.fromOwner || msg.sender == transfer.toOwner,
-            "Only parties involved can cancel"
-        );
-        
-        landRecords[transfer.recordId].pendingOwner = address(0);
-        transfer.isActive = false;
-        
-        emit TransferCancelled(_transferId, transfer.recordId, msg.sender);
-    }
-    
-    // ==================== VIEW FUNCTIONS ====================
-    
-    function getTransferRequest(uint256 _transferId)
-        external
-        view
-        transferExists(_transferId)
-        returns (
-            uint256 recordId,
-            address fromOwner,
-            address toOwner,
-            string memory newDocumentHash,
-            string memory newIpfsCID,
-            bool documentVerified,
-            bool isActive,
-            uint256 initiatedAt
-        )
-    {
-        TransferRequest storage transfer = transferRequests[_transferId];
-        return (
-            transfer.recordId,
-            transfer.fromOwner,
-            transfer.toOwner,
-            transfer.newDocumentHash,
-            transfer.newIpfsCID,
-            transfer.documentVerified,
-            transfer.isActive,
-            transfer.initiatedAt
-        );
     }
     
     function getRecordsByOwner(address _owner) 
@@ -370,32 +347,6 @@ contract LandRegistry {
         }
         
         return ownedRecords;
-    }
-    
-    function getPendingTransfers(address _pendingOwner)
-        external
-        view
-        returns (uint256[] memory)
-    {
-        uint256 pendingCount = 0;
-        
-        for (uint256 i = 0; i < transferRequestCount; i++) {
-            if (transferRequests[i].toOwner == _pendingOwner && transferRequests[i].isActive) {
-                pendingCount++;
-            }
-        }
-        
-        uint256[] memory pendingTransfers = new uint256[](pendingCount);
-        uint256 currentIndex = 0;
-        
-        for (uint256 i = 0; i < transferRequestCount; i++) {
-            if (transferRequests[i].toOwner == _pendingOwner && transferRequests[i].isActive) {
-                pendingTransfers[currentIndex] = i;
-                currentIndex++;
-            }
-        }
-        
-        return pendingTransfers;
     }
     
     function verifyHash(uint256 _recordId, string memory _documentHash)
