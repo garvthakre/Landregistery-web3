@@ -1,8 +1,8 @@
-import { Menu, X, ChevronRight, Lock, MapPin, FileCheck, Users, Zap, Shield, Globe, Landmark } from 'lucide-react';
 import Header from '../components/Header';
 import HeroSection from '../components/landingCompoments/hero-section';
 import FeaturesSection from '../components/landingCompoments/feature-section';
 import WorkflowSection from '../components/landingCompoments/workflow-section';
+import Footer from '../components/Footer';
 
 export default function ALanding() {
 //   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -17,11 +17,10 @@ export default function ALanding() {
         <HeroSection />
         <FeaturesSection />
         <WorkflowSection />
-        {/* <ImpactSection /> */}
         {/* <TechStackSection /> */}
         {/* <CTASection /> */}
       </main>
-      {/* <Footer /> */}
+      <Footer />
     </div>
   );
 }

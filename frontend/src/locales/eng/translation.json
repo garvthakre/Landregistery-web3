@@ -1,0 +1,36 @@
+{
+  "nav": {
+    "title": "Land Registry System",
+    "upload": "Upload",
+    "verify": "Verify",
+    "transfer": "Transfer",
+    "features": "Features",
+    "seeInAction": "See in action",
+    "workflow": "Workflow",
+    "logout": "Logout",
+    "login": "Login",
+    "signup": "Signup"
+  },
+  "auth": {
+    "user": "User",
+    "admin": "Admin",
+    "wallet": "Wallet",
+    "aadhaarNumber": "Aadhaar Number",
+    "password": "Password",
+    "patwariId": "Patwari ID",
+    "name": "Name",
+    "phoneNumber": "Phone Number",
+    "address": "Address",
+    "loginButton": "Login with MetaMask",
+    "signupButton": "Signup with MetaMask",
+    "dontHaveAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?"
+  },
+  "messages": {
+    "loading": "Loading...",
+    "connectingWallet": "Connecting & Logging in...",
+    "installMetaMask": "Please install MetaMask to continue",
+    "loginFailed": "Login failed",
+    "signupFailed": "Signup failed"
+  }
+}

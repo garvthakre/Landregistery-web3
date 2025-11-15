@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
+import { useTranslation } from 'react-i18next';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -14,6 +15,8 @@ function LoginPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const {t} = useTranslation();
 
   const handleChange = (e) => {
     setFormData({
@@ -46,7 +49,7 @@ function LoginPage() {
       });
 
       if (result.success) {
-        navigate('/');
+        navigate('/upload');
       } else {
         setError(result.error || 'Login failed');
       }
@@ -60,11 +63,11 @@ function LoginPage() {
 
   return (
     <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc' }}>
-      <h2>Login</h2>
+      <h2 className='text-center font-bold'>{t("nav.login")}</h2>
       {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '15px' }}>
-          <label>Aadhar Number:</label>
+          <label>{t("auth.aadhaarNumber")}</label>
           <input
             type="text"
             name="aadharNo"
@@ -72,10 +75,11 @@ function LoginPage() {
             onChange={handleChange}
             required
             style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+            className='border rounded-lg'
           />
         </div>
         <div style={{ marginBottom: '15px' }}>
-          <label>Password:</label>
+          <label>{t("auth.password")}</label>
           <input
             type="password"
             name="password"
@@ -83,10 +87,11 @@ function LoginPage() {
             onChange={handleChange}
             required
             style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+            className='border rounded-lg'
           />
         </div>
         <div style={{ marginBottom: '15px' }}>
-          <label>Patwari ID (Admin only):</label>
+          <label>{t("auth.patwariId")} (Admin only):</label>
           <input
             type="text"
             name="patwariId"
@@ -94,6 +99,7 @@ function LoginPage() {
             onChange={handleChange}
             placeholder="Optional - for admin login"
             style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+            className='border rounded-lg'
           />
         </div>
         <button 
@@ -101,11 +107,11 @@ function LoginPage() {
           disabled={loading}
           style={{ width: '100%', padding: '10px', backgroundColor: '#4CAF50', color: 'white', border: 'none', cursor: 'pointer' }}
         >
-          {loading ? 'Connecting & Logging in...' : 'Login with MetaMask'}
+          {loading ? 'Connecting & Logging in...' : t("auth.loginButton")}
         </button>
       </form>
       <p style={{ marginTop: '15px', textAlign: 'center' }}>
-        Don't have an account? <Link to="/signup">Signup</Link>
+        {t("auth.dontHaveAccount")}? <Link to="/signup">{t("nav.signup")}</Link>
       </p>
     </div>
   );

@@ -62,6 +62,15 @@ export default function WorkflowSection() {
           </div>
         </div>
       </div>
+
+      <div className="mb-16 mt-12 max-w-7xl mx-auto">
+          <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-pretty">
+            <span className="text-emerald-400">Workflow</span>
+          </h2>
+       <div className='flex mt-6'>
+        <img src="/workflow.png" alt="Logo" className="w-350 h-120 rounded-4xl"/>
+      </div>
+        </div>
     </section>
   );
 }

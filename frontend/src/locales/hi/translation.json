@@ -1,0 +1,36 @@
+{
+  "nav": {
+    "title": "भूमि रजिस्ट्री सिस्टम",
+    "upload": "अपलोड करें",
+    "verify": "सत्यापित करें",
+    "transfer": "स्थानांतरण",
+    "features": "विशेषताएं",
+    "seeInAction": "कार्य में देखें",
+    "workflow": "कार्य प्रवाह",
+    "logout": "लॉग आउट",
+    "login": "लॉग इन",
+    "signup": "साइन अप"
+  },
+  "auth": {
+    "user": "उपयोगकर्ता",
+    "admin": "व्यवस्थापक",
+    "wallet": "वॉलेट",
+    "aadhaarNumber": "आधार नंबर",
+    "password": "पासवर्ड",
+    "patwariId": "पटवारी आईडी",
+    "name": "नाम",
+    "phoneNumber": "फोन नंबर",
+    "address": "पता",
+    "loginButton": "MetaMask से लॉग इन करें",
+    "signupButton": "MetaMask से साइन अप करें",
+    "dontHaveAccount": "खाता नहीं है?",
+    "alreadyHaveAccount": "पहले से खाता है?"
+  },
+  "messages": {
+    "loading": "लोड हो रहा है...",
+    "connectingWallet": "कनेक्ट हो रहा है और लॉग इन हो रहा है...",
+    "installMetaMask": "कृपया जारी रखने के लिए MetaMask इंस्टॉल करें",
+    "loginFailed": "लॉगिन विफल रहा",
+    "signupFailed": "साइनअप विफल रहा"
+  }
+}

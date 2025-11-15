@@ -1,0 +1,36 @@
+{
+  "nav": {
+    "title": "जमीन रजिस्ट्री सिस्टम",
+    "upload": "अपलोड करव",
+    "verify": "जांच करव",
+    "transfer": "ट्रांसफर",
+    "features": "खासियत",
+    "seeInAction": "काम म देखव",
+    "workflow": "काम के तरीका",
+    "logout": "लॉग आउट",
+    "login": "लॉग इन",
+    "signup": "साइन अप"
+  },
+  "auth": {
+    "user": "यूजर",
+    "admin": "एडमिन",
+    "wallet": "वॉलेट",
+    "aadhaarNumber": "आधार नंबर",
+    "password": "पासवर्ड",
+    "patwariId": "पटवारी आईडी",
+    "name": "नाव",
+    "phoneNumber": "फोन नंबर",
+    "address": "पता",
+    "loginButton": "MetaMask ले लॉग इन करव",
+    "signupButton": "MetaMask ले साइन अप करव",
+    "dontHaveAccount": "अकाउंट नइ हे?",
+    "alreadyHaveAccount": "पहिली ले अकाउंट हे?"
+  },
+  "messages": {
+    "loading": "लोड होवत हे...",
+    "connectingWallet": "कनेक्ट होवत हे अउ लॉग इन होवत हे...",
+    "installMetaMask": "आगू बढ़े बर MetaMask इंस्टॉल करव",
+    "loginFailed": "लॉगिन फेल हो गे",
+    "signupFailed": "साइनअप फेल हो गे"
+  }
+}
