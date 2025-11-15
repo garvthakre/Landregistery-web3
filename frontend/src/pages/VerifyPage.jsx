@@ -228,8 +228,8 @@ const VerifyPage = () => {
 
             {/* Info Box */}
             {!isVerifying && verificationSteps.length === 0 && (
-              <div className="mt-6 bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl p-4">
-                <div className="flex items-start gap-3">
+              <div className=" rounded-xl p-4">
+                {/* <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <h4 className="font-semibold text-blue-900 mb-1">How Verification Works</h4>
@@ -240,7 +240,7 @@ const VerifyPage = () => {
                       <li>• Any tampering is instantly detected</li>
                     </ul>
                   </div>
-                </div>
+                </div> */}
               </div>
             )}
           </div>

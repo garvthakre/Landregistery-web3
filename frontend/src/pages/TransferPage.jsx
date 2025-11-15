@@ -20,16 +20,16 @@ const TransferPage = () => {
   const [loadingRecords, setLoadingRecords] = useState(true);
 
   const INITIATE_STEPS = [
-    { id: 1, name: 'Validating Record', icon: Shield, color: 'blue', description: 'Verifying ownership rights' },
-    { id: 2, name: 'Checking Recipient', icon: Users, color: 'purple', description: 'Validating recipient details' },
+    { id: 1, name: 'Validating Record', icon: Shield, color: 'emerald', description: 'Verifying ownership rights' },
+    { id: 2, name: 'Checking Recipient', icon: Users, color: 'teal', description: 'Validating recipient details' },
     { id: 3, name: 'Creating Transfer Request', icon: Database, color: 'green', description: 'Generating transfer contract' },
     { id: 4, name: 'Notifying Parties', icon: Bell, color: 'orange', description: 'Sending notifications' },
     { id: 5, name: 'Recording on Blockchain', icon: Database, color: 'pink', description: 'Storing transfer intent' },
   ];
 
   const ACCEPT_STEPS = [
-    { id: 1, name: 'Verifying Document', icon: Upload, color: 'blue', description: 'Analyzing uploaded document' },
-    { id: 2, name: 'Computing Hash', icon: Hash, color: 'purple', description: 'Generating document hash' },
+    { id: 1, name: 'Verifying Document', icon: Upload, color: 'emerald', description: 'Analyzing uploaded document' },
+    { id: 2, name: 'Computing Hash', icon: Hash, color: 'teal', description: 'Generating document hash' },
     { id: 3, name: 'Cross-Checking Data', icon: Shield, color: 'green', description: 'Validating with blockchain' },
     { id: 4, name: 'Updating Ownership', icon: Users, color: 'orange', description: 'Transferring ownership rights' },
     { id: 5, name: 'Broadcasting Transaction', icon: Zap, color: 'pink', description: 'Publishing to network' },
@@ -109,17 +109,14 @@ const TransferPage = () => {
         return;
       }
 
-      // Step 1: Validate
       updateStep(INITIATE_STEPS, setInitiateSteps, 0, 'processing');
       await new Promise(resolve => setTimeout(resolve, 1000));
       updateStep(INITIATE_STEPS, setInitiateSteps, 0, 'completed', 'Record validated');
 
-      // Step 2: Check recipient
       updateStep(INITIATE_STEPS, setInitiateSteps, 1, 'processing');
       await new Promise(resolve => setTimeout(resolve, 800));
       updateStep(INITIATE_STEPS, setInitiateSteps, 1, 'completed', 'Recipient checked');
 
-      // Step 3: Create request
       updateStep(INITIATE_STEPS, setInitiateSteps, 2, 'processing');
       
       const transferId = `TXF-${Date.now()}`;
@@ -144,12 +141,10 @@ const TransferPage = () => {
 
       updateStep(INITIATE_STEPS, setInitiateSteps, 2, 'completed', 'Transfer created');
 
-      // Step 4: Notify
       updateStep(INITIATE_STEPS, setInitiateSteps, 3, 'processing');
       await new Promise(resolve => setTimeout(resolve, 600));
       updateStep(INITIATE_STEPS, setInitiateSteps, 3, 'completed', 'Parties notified');
 
-      // Step 5: Record
       updateStep(INITIATE_STEPS, setInitiateSteps, 4, 'processing');
       await new Promise(resolve => setTimeout(resolve, 1200));
       updateStep(INITIATE_STEPS, setInitiateSteps, 4, 'completed', 'Recorded on blockchain');
@@ -233,32 +228,26 @@ const TransferPage = () => {
     setAcceptSteps([]);
 
     try {
-      // Step 1: Verify doc
       updateStep(ACCEPT_STEPS, setAcceptSteps, 0, 'processing');
       await new Promise(resolve => setTimeout(resolve, 1200));
       updateStep(ACCEPT_STEPS, setAcceptSteps, 0, 'completed', 'Document verified');
 
-      // Step 2: Compute hash
       updateStep(ACCEPT_STEPS, setAcceptSteps, 1, 'processing');
       await new Promise(resolve => setTimeout(resolve, 1000));
       updateStep(ACCEPT_STEPS, setAcceptSteps, 1, 'completed', 'Hash computed');
 
-      // Step 3: Cross-check
       updateStep(ACCEPT_STEPS, setAcceptSteps, 2, 'processing');
       await new Promise(resolve => setTimeout(resolve, 1500));
       updateStep(ACCEPT_STEPS, setAcceptSteps, 2, 'completed', 'Data validated');
 
-      // Step 4: Update ownership
       updateStep(ACCEPT_STEPS, setAcceptSteps, 3, 'processing');
       await new Promise(resolve => setTimeout(resolve, 1300));
       updateStep(ACCEPT_STEPS, setAcceptSteps, 3, 'completed', 'Ownership updated');
 
-      // Step 5: Broadcast
       updateStep(ACCEPT_STEPS, setAcceptSteps, 4, 'processing');
       await new Promise(resolve => setTimeout(resolve, 1100));
       updateStep(ACCEPT_STEPS, setAcceptSteps, 4, 'completed', 'Transaction broadcasted');
 
-      // Step 6: Confirm
       updateStep(ACCEPT_STEPS, setAcceptSteps, 5, 'processing');
       
       const txHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
@@ -291,36 +280,60 @@ const TransferPage = () => {
 
   const getStepColor = (color) => {
     const colors = {
-      blue: 'from-blue-500 to-blue-600',
-      purple: 'from-purple-500 to-purple-600',
+      emerald: 'from-emerald-500 to-emerald-600',
+      teal: 'from-teal-500 to-teal-600',
       green: 'from-green-500 to-green-600',
       orange: 'from-orange-500 to-orange-600',
       pink: 'from-pink-500 to-pink-600',
       indigo: 'from-indigo-500 to-indigo-600',
     };
-    return colors[color] || colors.blue;
+    return colors[color] || colors.emerald;
   };
 
   const getStepBgColor = (color) => {
     const colors = {
-      blue: 'bg-blue-50', purple: 'bg-purple-50', green: 'bg-green-50',
-      orange: 'bg-orange-50', pink: 'bg-pink-50', indigo: 'bg-indigo-50',
+      emerald: 'bg-emerald-50',
+      teal: 'bg-teal-50',
+      green: 'bg-green-50',
+      orange: 'bg-orange-50',
+      pink: 'bg-pink-50',
+      indigo: 'bg-indigo-50',
     };
-    return colors[color] || colors.blue;
+    return colors[color] || colors.emerald;
   };
 
   const getStepBorderColor = (color) => {
     const colors = {
-      blue: 'border-blue-400', purple: 'border-purple-400', green: 'border-green-400',
-      orange: 'border-orange-400', pink: 'border-pink-400', indigo: 'border-indigo-400',
+      emerald: 'border-emerald-400',
+      teal: 'border-teal-400',
+      green: 'border-green-400',
+      orange: 'border-orange-400',
+      pink: 'border-pink-400',
+      indigo: 'border-indigo-400',
     };
-    return colors[color] || colors.blue;
+    return colors[color] || colors.emerald;
+  };
+
+  const getStatusBadge = (status) => {
+    const statusColors = {
+      initiated: 'bg-emerald-100 text-emerald-800',
+      document_verified: 'bg-green-100 text-green-800',
+      document_rejected: 'bg-red-100 text-red-800',
+      completed: 'bg-teal-100 text-teal-800',
+      cancelled: 'bg-gray-100 text-gray-800',
+    };
+
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
+        {status?.replace('_', ' ').toUpperCase()}
+      </span>
+    );
   };
 
   const renderProcessSteps = (steps) => (
     <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg animate-pulse">
+        <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg animate-pulse">
           <Zap className="w-6 h-6 text-white" />
         </div>
         <div>
@@ -343,7 +356,7 @@ const TransferPage = () => {
                 isActive 
                   ? `${getStepBorderColor(step.color)} ${getStepBgColor(step.color)} shadow-lg scale-105` 
                   : isCompleted
-                  ? 'border-green-300 bg-green-50'
+                  ? 'border-emerald-300 bg-emerald-50'
                   : 'border-gray-200 bg-gray-50'
               }`}
             >
@@ -351,7 +364,7 @@ const TransferPage = () => {
                 <div className={`p-2 rounded-lg flex-shrink-0 ${
                   isActive 
                     ? `bg-gradient-to-br ${getStepColor(step.color)} animate-pulse shadow-lg` 
-                    : isCompleted ? 'bg-green-500' : 'bg-gray-300'
+                    : isCompleted ? 'bg-emerald-500' : 'bg-gray-300'
                 }`}>
                   {isCompleted ? (
                     <CheckCircle className="w-5 h-5 text-white" />
@@ -365,24 +378,24 @@ const TransferPage = () => {
                     <h4 className="font-bold text-gray-800 text-sm">{step.name}</h4>
                     {isActive && <Loader2 className="w-4 h-4 text-gray-600 animate-spin" />}
                     {isCompleted && duration && (
-                      <span className="text-xs text-green-600 font-semibold">✓ {duration}s</span>
+                      <span className="text-xs text-emerald-600 font-semibold">✓ {duration}s</span>
                     )}
                   </div>
                   <p className="text-xs text-gray-600">{step.description}</p>
                   {step.message && (
-                    <p className="text-xs text-green-600 mt-1">{step.message}</p>
+                    <p className="text-xs text-emerald-600 mt-1">{step.message}</p>
                   )}
                   
                   {isActive && (
                     <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse" style={{ width: '100%' }} />
+                      <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full animate-pulse" style={{ width: '100%' }} />
                     </div>
                   )}
                 </div>
               </div>
 
               {index < steps.length - 1 && (
-                <div className={`absolute left-7 top-full w-0.5 h-3 ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <div className={`absolute left-7 top-full w-0.5 h-3 ${isCompleted ? 'bg-emerald-500' : 'bg-gray-300'}`} />
               )}
             </div>
           );
@@ -395,9 +408,9 @@ const TransferPage = () => {
     <div className="max-w-7xl mx-auto mt-8 px-4 space-y-8">
       {/* Initiate Transfer Section */}
       <div className="grid lg:grid-cols-2 gap-8">
-        <div className="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-2xl p-8 border border-purple-100">
+        <div className="bg-gradient-to-br from-white to-emerald-50 rounded-2xl shadow-2xl p-8 border border-emerald-100">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+            <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
               <Send className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -411,7 +424,7 @@ const TransferPage = () => {
               <label className="block text-sm font-semibold text-gray-700">Select Record *</label>
               {loadingRecords ? (
                 <div className="flex items-center justify-center py-4">
-                  <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+                  <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
                   <span className="ml-2 text-gray-600">Loading...</span>
                 </div>
               ) : (
@@ -419,7 +432,7 @@ const TransferPage = () => {
                   value={transferData.recordId}
                   onChange={(e) => setTransferData(prev => ({ ...prev, recordId: e.target.value }))}
                   required
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                 >
                   <option value="">Choose a record</option>
                   {allRecords.map((record) => (
@@ -443,14 +456,14 @@ const TransferPage = () => {
                 required
                 placeholder="Enter 12-digit Aadhar"
                 maxLength="12"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-mono"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono"
               />
             </div>
 
             <button
               onClick={handleInitiateTransfer}
               disabled={isProcessing || loadingRecords}
-              className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-4 rounded-xl font-bold text-lg hover:from-purple-700 hover:to-purple-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 text-white py-4 rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
             >
               {isProcessing ? (
                 <span className="flex items-center justify-center gap-2">
@@ -471,9 +484,9 @@ const TransferPage = () => {
       </div>
 
       {/* Pending Transfers */}
-      <div className="bg-white rounded-2xl shadow-2xl p-8 border border-orange-200">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 border border-teal-200">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg">
+          <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl shadow-lg">
             <Clock className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -492,7 +505,7 @@ const TransferPage = () => {
         ) : (
           <div className="grid lg:grid-cols-2 gap-6">
             {pendingTransfers.map((transfer) => (
-              <div key={transfer.transferId} className="border-2 border-orange-200 rounded-xl p-6 bg-gradient-to-br from-orange-50 to-white">
+              <div key={transfer.transferId} className="border-2 border-teal-200 rounded-xl p-6 bg-gradient-to-br from-teal-50 to-white">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <div className="font-bold text-lg text-gray-800 mb-1">Transfer #{transfer.transferId.slice(-8)}</div>
@@ -500,21 +513,15 @@ const TransferPage = () => {
                     <p className="text-sm text-gray-600">From: {transfer.fromOwner}</p>
                     <p className="text-sm text-gray-600">To: {transfer.toOwner}</p>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    transfer.status === 'document_verified' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {transfer.status === 'document_verified' ? 'Ready' : 'Pending Doc'}
-                  </div>
+                  {getStatusBadge(transfer.status)}
                 </div>
 
                 {!transfer.documentHash ? (
                   <div className="space-y-3">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <Upload className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-semibold text-blue-800">Upload New Document</span>
+                        <Upload className="w-4 h-4 text-emerald-600" />
+                        <span className="text-sm font-semibold text-emerald-800">Upload New Document</span>
                       </div>
                       <input
                         type="file"
@@ -527,7 +534,7 @@ const TransferPage = () => {
                     <button
                       onClick={() => handleDocumentUpload(transfer.transferId)}
                       disabled={uploadingDoc && activeTransferId === transfer.transferId}
-                      className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                      className="w-full bg-emerald-600 text-white py-2 rounded-lg font-semibold hover:bg-emerald-700 transition-colors disabled:bg-gray-400"
                     >
                       {uploadingDoc && activeTransferId === transfer.transferId ? (
                         <span className="flex items-center justify-center gap-2">
@@ -541,17 +548,17 @@ const TransferPage = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                       <div className="flex items-center gap-2 mb-1">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-sm font-semibold text-green-800">Document Verified</span>
+                        <CheckCircle className="w-4 h-4 text-emerald-600" />
+                        <span className="text-sm font-semibold text-emerald-800">Document Verified</span>
                       </div>
-                      <p className="text-xs text-green-700 font-mono">{transfer.documentHash.slice(0, 20)}...</p>
+                      <p className="text-xs text-emerald-700 font-mono">{transfer.documentHash.slice(0, 20)}...</p>
                     </div>
                     <button
                       onClick={() => handleAcceptTransfer(transfer.transferId)}
                       disabled={isProcessing && activeTransferId === transfer.transferId}
-                      className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-400"
+                      className="w-full bg-emerald-600 text-white py-2 rounded-lg font-semibold hover:bg-emerald-700 transition-colors disabled:bg-gray-400"
                     >
                       {isProcessing && activeTransferId === transfer.transferId ? (
                         <span className="flex items-center justify-center gap-2">
@@ -576,9 +583,9 @@ const TransferPage = () => {
       </div>
 
       {/* Completed Transfers */}
-      <div className="bg-white rounded-2xl shadow-2xl p-8 border border-green-200">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 border border-emerald-200">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
+          <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
             <CheckCircle className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -597,12 +604,12 @@ const TransferPage = () => {
         ) : (
           <div className="space-y-4">
             {completedTransfers.map((transfer) => (
-              <div key={transfer.transferId} className="border border-green-200 rounded-xl p-5 bg-gradient-to-r from-green-50 to-white hover:shadow-lg transition-shadow">
+              <div key={transfer.transferId} className="border border-emerald-200 rounded-xl p-5 bg-gradient-to-r from-emerald-50 to-white hover:shadow-lg transition-shadow">
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="font-bold text-gray-800">Transfer #{transfer.transferId.slice(-8)}</span>
-                      <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">COMPLETED</span>
+                      <span className="px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">COMPLETED</span>
                     </div>
                     <p className="text-sm text-gray-600">Record: #{transfer.recordId}</p>
                     <p className="text-sm text-gray-600">From: {transfer.fromOwner} → To: {transfer.toOwner}</p>
@@ -613,7 +620,7 @@ const TransferPage = () => {
                       <p className="text-xs text-gray-500">Block: {transfer.blockNumber}</p>
                     )}
                   </div>
-                  <CheckCircle className="w-8 h-8 text-green-500" />
+                  <CheckCircle className="w-8 h-8 text-emerald-500" />
                 </div>
               </div>
             ))}

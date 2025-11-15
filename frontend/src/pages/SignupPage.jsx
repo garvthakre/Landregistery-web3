@@ -18,7 +18,7 @@ const AuthPage = ({ mode = 'login' }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // 1: Connect Wallet, 2: Fill Form
+  const [step, setStep] = useState(1);
 
   useEffect(() => {
     checkWalletConnection();
@@ -110,7 +110,6 @@ const AuthPage = ({ mode = 'login' }) => {
         setSuccess(isLogin ? 'Login successful!' : 'Signup successful!');
         localStorage.setItem('user', JSON.stringify(result.user));
         
-        // Redirect after 1 second
         setTimeout(() => {
           window.location.href = '/upload';
         }, 1000);
@@ -140,11 +139,11 @@ const AuthPage = ({ mode = 'login' }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 py-12 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg mb-4">
+          <div className="inline-flex p-4 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl shadow-lg mb-4">
             <Shield className="w-12 h-12 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
@@ -196,11 +195,11 @@ const AuthPage = ({ mode = 'login' }) => {
 
           {/* Success Alert */}
           {success && (
-            <div className="mb-6 bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="mb-6 bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4 flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-semibold text-green-800">Success</h4>
-                <p className="text-sm text-green-700">{success}</p>
+                <h4 className="font-semibold text-emerald-800">Success</h4>
+                <p className="text-sm text-emerald-700">{success}</p>
               </div>
             </div>
           )}
@@ -236,18 +235,18 @@ const AuthPage = ({ mode = 'login' }) => {
                 )}
               </button>
 
-              <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+              {/* <div className="mt-8 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                <h4 className="font-semibold text-emerald-900 mb-2 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" />
                   Important Notes:
                 </h4>
-                <ul className="text-sm text-blue-800 space-y-1 text-left">
+                <ul className="text-sm text-emerald-800 space-y-1 text-left">
                   <li>• Make sure MetaMask is installed in your browser</li>
                   <li>• Each wallet address can only have one account</li>
                   <li>• Switch MetaMask accounts to create multiple users</li>
                   <li>• Your wallet address will be linked to your account</li>
                 </ul>
-              </div>
+              </div> */}
             </div>
           )}
 
@@ -255,15 +254,15 @@ const AuthPage = ({ mode = 'login' }) => {
           {step === 2 && (
             <div>
               {/* Wallet Info */}
-              <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4">
+              <div className="mb-6 bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-300 rounded-xl p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-500 rounded-lg">
+                    <div className="p-2 bg-emerald-500 rounded-lg">
                       <Wallet className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs text-green-700 font-semibold">Connected Wallet</p>
-                      <p className="text-sm font-mono text-green-800">
+                      <p className="text-xs text-emerald-700 font-semibold">Connected Wallet</p>
+                      <p className="text-sm font-mono text-emerald-800">
                         {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                       </p>
                     </div>
@@ -291,7 +290,7 @@ const AuthPage = ({ mode = 'login' }) => {
                       value={formData.name}
                       onChange={handleChange}
                       required={!isLogin}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                       placeholder="Enter your full name"
                     />
                   </div>
@@ -309,7 +308,7 @@ const AuthPage = ({ mode = 'login' }) => {
                     onChange={handleChange}
                     required
                     maxLength="12"
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono"
                     placeholder="123456789012"
                   />
                 </div>
@@ -326,7 +325,7 @@ const AuthPage = ({ mode = 'login' }) => {
                       onChange={handleChange}
                       required={!isLogin}
                       maxLength="10"
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono"
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono"
                       placeholder="9876543210"
                     />
                   </div>
@@ -343,7 +342,7 @@ const AuthPage = ({ mode = 'login' }) => {
                       value={formData.address}
                       onChange={handleChange}
                       required={!isLogin}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                       placeholder="Enter your address"
                     />
                   </div>
@@ -360,7 +359,7 @@ const AuthPage = ({ mode = 'login' }) => {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                     placeholder="Enter password"
                   />
                 </div>
@@ -374,7 +373,7 @@ const AuthPage = ({ mode = 'login' }) => {
                     name="patwariId"
                     value={formData.patwariId}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                     placeholder="PAT1234567 (for admin access)"
                   />
                   {!isLogin && (
@@ -387,7 +386,7 @@ const AuthPage = ({ mode = 'login' }) => {
                 <button
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 text-white py-4 rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
@@ -408,7 +407,7 @@ const AuthPage = ({ mode = 'login' }) => {
                   {isLogin ? "Don't have an account? " : 'Already have an account? '}
                   <button
                     onClick={toggleMode}
-                    className="text-blue-600 font-semibold hover:text-blue-700 transition-colors"
+                    className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
                   >
                     {isLogin ? 'Sign up' : 'Log in'}
                   </button>
@@ -417,9 +416,6 @@ const AuthPage = ({ mode = 'login' }) => {
             </div>
           )}
         </div>
-
-         
-        
       </div>
     </div>
   );

@@ -210,7 +210,7 @@ const UploadPage = () => {
         <div className="space-y-6">
           <div className="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-2xl p-8 border border-blue-100">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+              <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
                 <Upload className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -318,7 +318,7 @@ const UploadPage = () => {
               <button
                 onClick={handleUpload}
                 disabled={processingSteps.length > 0 && !uploadResult}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {processingSteps.length > 0 && !uploadResult ? (
                   <span className="flex items-center justify-center gap-2">
