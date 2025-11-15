@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleMap, LoadScript, Polygon, Marker } from '@react-google-maps/api';
-
+const MAPS_KEY = import.meta.env.VITE_MAPS_KEY
 const GeotaggingTracker = () => {
   const [coordinates, setCoordinates] = useState([]);
   const [currentPosition, setCurrentPosition] = useState(null);
@@ -356,7 +356,7 @@ const GeotaggingTracker = () => {
 
       {/* Map Container */}
       <div style={{ flex: 1 }}>
-        <LoadScript googleMapsApiKey="AIzaSyAExaJvdiAd2wF3Zp79EF_q8cEupQXvI6w">
+        <LoadScript googleMapsApiKey={MAPS_KEY}>
           <GoogleMap
             mapContainerStyle={{ width: '100%', height: '100%' }}
             center={mapCenter}

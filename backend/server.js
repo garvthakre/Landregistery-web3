@@ -8,6 +8,7 @@ const authRoutes = require('./auth');
 const FormData = require('form-data');
 const transferRoutes = require('./transfer');
 const uploadRoutes = require('./upload');
+const geoVerificationRoutes = require('./geoVerification');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
 
@@ -18,14 +19,14 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Multer configuration for file uploads
+// Multer configuration
 const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-// ================== ENV VALIDATIONS ===================
+// ENV VALIDATIONS
 if (!process.env.PINATA_JWT) {
   console.warn("⚠️  Missing PINATA_JWT in .env - IPFS uploads will fail");
 }
@@ -38,19 +39,25 @@ if (!process.env.GEMINI_KEY) {
   console.warn("⚠️  Missing GEMINI_KEY in .env - OCR will fail");
 }
 
-// ================== CONTRACT CONFIG ===================
+// CONTRACT CONFIG
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const RPC_URL = process.env.RPC_URL;
 const PINATA_JWT = process.env.PINATA_JWT;
 const GEMINI_KEY = process.env.GEMINI_KEY;
 
+// UPDATED CONTRACT ABI with area-based verification
 const CONTRACT_ABI = [
-  "function createRecord(string _ownerName, string _village, string _ipfsCID, string _documentHash) external returns (uint256)",
-  "function getRecord(uint256 _recordId) external view returns (string ownerName, string village, string ipfsCID, string documentHash, uint256 timestamp, address currentOwner, address uploadedBy, address pendingOwner, address[] ownershipHistory)",
+  "function createRecord(string _ownerName, string _village, string _ipfsCID, string _documentHash, string _claimedArea, string _unit) external returns (uint256)",
+  "function getRecord(uint256 _recordId) external view returns (string ownerName, string village, string ipfsCID, string documentHash, uint256 timestamp, address currentOwner, address uploadedBy, address pendingOwner, address[] ownershipHistory, string claimedArea, string verifiedArea, string unit, bool areaVerified, bool pendingAreaVerification)",
+  "function verifyArea(uint256 _recordId, string _verifiedArea) external",
+  "function getPendingAreaVerifications() external view returns (uint256[])",
   "function verifyHash(uint256 _recordId, string _documentHash) external view returns (bool)",
   "function getRecordCount() external view returns (uint256)",
-  "event RecordCreated(uint256 indexed recordId, address indexed owner, string village, string ipfsCID)"
+  "function addPatwari(address _patwari) external",
+  "event RecordCreated(uint256 indexed recordId, address indexed owner, string village, string ipfsCID)",
+  "event AreaVerificationRequested(uint256 indexed recordId, string claimedArea, string unit, uint256 timestamp)",
+  "event AreaVerificationCompleted(uint256 indexed recordId, bool matched, address indexed verifiedBy, uint256 timestamp)"
 ];
 
 // Initialize provider & contract
@@ -71,14 +78,11 @@ try {
 // Initialize Gemini AI
 const genAI = GEMINI_KEY ? new GoogleGenerativeAI(GEMINI_KEY) : null;
 
-// ================== HELPERS ===================
-
-// Calculate document hash
+// HELPERS
 function calculateHash(buffer) {
   return crypto.createHash("sha256").update(buffer).digest("hex");
 }
 
-// Upload to Pinata (JWT only, v3)
 async function uploadToPinata(fileBuffer, filename) {
   try {
     const formData = new FormData();
@@ -107,7 +111,7 @@ async function uploadToPinata(fileBuffer, filename) {
   }
 }
 
-// OCR using Gemini
+// Enhanced OCR with Land Area extraction
 async function extractDocumentData(imageBuffer, mimeType) {
   if (!genAI) {
     throw new Error("Gemini API not configured");
@@ -119,6 +123,7 @@ async function extractDocumentData(imageBuffer, mimeType) {
       - Owner Name (full name of the land owner)
       - Village (village or location name)
       - Land Area (area with unit if visible)
+      - Unit (acres, hectares, square meters, bigha, etc.)
       - Survey Number (plot/survey number if visible)
       - Date (any date mentioned on the document)
       - Signatures or Stamps (mention if visible)
@@ -127,7 +132,8 @@ async function extractDocumentData(imageBuffer, mimeType) {
       {
         "ownerName": "extracted name or empty string",
         "village": "extracted village or empty string",
-        "landArea": "extracted area or empty string",
+        "landArea": "extracted area number only or empty string",
+        "unit": "extracted unit (acres/hectares/sq meters/bigha) or empty string",
         "surveyNumber": "extracted number or empty string",
         "date": "extracted date or empty string",
         "hasSignatures": "yes/no/unknown"
@@ -148,8 +154,6 @@ async function extractDocumentData(imageBuffer, mimeType) {
     ]);
 
     const text = result.response.text();
-    
-    // Clean up response (remove markdown if present)
     const cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     
     return JSON.parse(cleanText);
@@ -159,9 +163,8 @@ async function extractDocumentData(imageBuffer, mimeType) {
   }
 }
 
-// ==================== API ROUTES ====================
+// API ROUTES
 
-// Health check
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
@@ -175,6 +178,7 @@ app.get("/api/health", (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/transfer', transferRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/geo-verification', geoVerificationRoutes);
 
 // OCR endpoint - Extract data from document image
 app.post("/api/ocr", upload.single("file"), async (req, res) => {
@@ -188,7 +192,6 @@ app.post("/api/ocr", upload.single("file"), async (req, res) => {
     const imageBuffer = req.file.buffer;
     const mimeType = req.file.mimetype;
 
-    // Validate image type
     if (!mimeType.startsWith('image/')) {
       return res.status(400).json({ 
         success: false, 
@@ -213,20 +216,22 @@ app.post("/api/ocr", upload.single("file"), async (req, res) => {
   }
 });
 
-// Upload & create blockchain record
+// UPDATED: Upload & create blockchain record with AREA-BASED verification
 app.post("/api/upload-document", upload.single("file"), async (req, res) => {
   try {
-    const { ownerName, village } = req.body;
+    const { ownerName, village, landArea, unit, userId, userAadhar } = req.body;
     const file = req.file;
 
-    if (!ownerName || !village || !file) {
+    // UPDATED VALIDATION: Check for landArea and unit instead of lat/lng
+    if (!ownerName || !village || !file || !landArea || !unit) {
       return res.status(400).json({ 
         success: false, 
-        error: "Missing required fields: ownerName, village, or file" 
+        error: "Missing required fields: ownerName, village, landArea, unit, or file" 
       });
     }
 
     console.log("📤 Upload initiated for:", ownerName, "(", village, ")");
+    console.log("📏 Claimed area:", landArea, unit);
 
     // Calculate hash
     const documentHash = calculateHash(file.buffer);
@@ -236,13 +241,15 @@ app.post("/api/upload-document", upload.single("file"), async (req, res) => {
     const ipfsResult = await uploadToPinata(file.buffer, file.originalname);
     console.log("✨ IPFS Upload:", ipfsResult.ipfsHash);
 
-    // Create blockchain transaction
-    console.log("📝 Creating blockchain record...");
+    // UPDATED: Create blockchain transaction with AREA instead of geolocation
+    console.log("📝 Creating blockchain record with area information...");
     const tx = await contract.createRecord(
       ownerName,
       village,
       ipfsResult.ipfsHash,
-      documentHash
+      documentHash,
+      landArea.toString(),
+      unit
     );
 
     console.log("⏳ Transaction sent:", tx.hash);
@@ -253,8 +260,6 @@ app.post("/api/upload-document", upload.single("file"), async (req, res) => {
 
     // Extract recordId from event logs
     let recordId;
-    
-    // Parse the RecordCreated event
     const iface = new ethers.Interface(CONTRACT_ABI);
     for (const log of receipt.logs) {
       try {
@@ -269,12 +274,10 @@ app.post("/api/upload-document", upload.single("file"), async (req, res) => {
           break;
         }
       } catch (e) {
-        // Skip logs that don't match our interface
         continue;
       }
     }
 
-    // Fallback: Get record count if event parsing fails
     if (!recordId) {
       console.log("⚠️ Using fallback method to get record ID");
       const count = await contract.getRecordCount();
@@ -282,7 +285,6 @@ app.post("/api/upload-document", upload.single("file"), async (req, res) => {
       console.log("📋 Record ID from count:", recordId);
     }
 
-    // Log upload to history
     // Log upload to history
     try {
       await axios.post(`http://localhost:${PORT}/api/upload/log-upload`, {
@@ -294,12 +296,17 @@ app.post("/api/upload-document", upload.single("file"), async (req, res) => {
         ipfsUrl: ipfsResult.ipfsUrl,
         transactionHash: receipt.hash,
         blockNumber: receipt.blockNumber,
-        uploadedBy: wallet.address
+        uploadedBy: wallet.address,
+        userId,
+        userAadhar,
+        landArea,
+        unit,
+        areaVerified: false,
+        pendingAreaVerification: true
       });
       console.log("✅ Upload logged to history");
     } catch (historyError) {
       console.error("⚠️ Failed to log upload history:", historyError.message);
-      // Don't fail the request if history logging fails
     }
 
     res.json({
@@ -313,6 +320,10 @@ app.post("/api/upload-document", upload.single("file"), async (req, res) => {
         ipfsUrl: ipfsResult.ipfsUrl,
         transactionHash: receipt.hash,
         blockNumber: receipt.blockNumber,
+        landArea,
+        unit,
+        pendingAreaVerification: true,
+        message: "Document uploaded successfully! Area verification pending."
       },
     });
   } catch (error) {
@@ -357,6 +368,9 @@ app.post("/api/verify", upload.single("file"), async (req, res) => {
         village: record.village,
         currentOwner: record.currentOwner,
         timestamp: new Date(Number(record.timestamp) * 1000).toLocaleString(),
+        areaVerified: record.areaVerified,
+        claimedArea: `${record.claimedArea} ${record.unit}`,
+        verifiedArea: record.areaVerified ? `${record.verifiedArea} ${record.unit}` : null
       },
       message: verified
         ? "✅ Document is authentic and matches blockchain record"
@@ -375,7 +389,6 @@ app.post("/api/verify", upload.single("file"), async (req, res) => {
 app.get("/api/record/:id", async (req, res) => {
   try {
     const id = req.params.id;
-
     console.log("📖 Fetching record:", id);
 
     const record = await contract.getRecord(id);
@@ -395,6 +408,11 @@ app.get("/api/record/:id", async (req, res) => {
         uploadedBy: record.uploadedBy,
         pendingOwner: record.pendingOwner,
         ownershipHistory: record.ownershipHistory,
+        claimedArea: record.claimedArea,
+        verifiedArea: record.verifiedArea,
+        unit: record.unit,
+        areaVerified: record.areaVerified,
+        pendingAreaVerification: record.pendingAreaVerification
       },
     });
   } catch (error) {
@@ -424,6 +442,8 @@ app.get("/api/records", async (req, res) => {
           village: record.village,
           timestamp: new Date(Number(record.timestamp) * 1000).toLocaleString(),
           currentOwner: record.currentOwner,
+          areaVerified: record.areaVerified,
+          pendingAreaVerification: record.pendingAreaVerification
         });
       } catch (error) {
         console.error(`Error fetching record ${i}:`, error.message);
@@ -452,5 +472,6 @@ app.listen(PORT, () => {
   console.log(`🔗 Contract: ${CONTRACT_ADDRESS}`);
   console.log(`👤 Wallet: ${wallet.address}`);
   console.log(`🤖 OCR: ${genAI ? 'Enabled' : 'Disabled'}`);
+  console.log(`📏 Area Verification: Enabled`);
   console.log("======================================");
 });
