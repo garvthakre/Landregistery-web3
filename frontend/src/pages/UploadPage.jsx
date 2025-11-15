@@ -85,7 +85,7 @@ const UploadPage = () => {
       data.append('ownerName', formData.ownerName);
       data.append('village', formData.village);
 
-      const response = await fetch(`${API_URL}/upload`, {
+const response = await fetch(`${API_URL}/upload-document`, {
         method: 'POST',
         body: data,
       });

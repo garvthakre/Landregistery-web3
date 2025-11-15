@@ -218,6 +218,14 @@ const AppContent = () => {
             }
           />
           <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <HistoryPage/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/transfer"
             element={
               <ProtectedRoute>

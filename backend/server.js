@@ -6,6 +6,8 @@ const { ethers } = require('ethers');
 const axios = require('axios');
 const authRoutes = require('./auth');
 const FormData = require('form-data');
+const transferRoutes = require('./transfer');
+const uploadRoutes = require('./upload');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
 
@@ -169,6 +171,11 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Mount routes
+app.use('/api/auth', authRoutes);
+app.use('/api/transfer', transferRoutes);
+app.use('/api/upload', uploadRoutes);
+
 // OCR endpoint - Extract data from document image
 app.post("/api/ocr", upload.single("file"), async (req, res) => {
   try {
@@ -205,9 +212,9 @@ app.post("/api/ocr", upload.single("file"), async (req, res) => {
     });
   }
 });
-app.use('/api/auth', authRoutes);
+
 // Upload & create blockchain record
-app.post("/api/upload", upload.single("file"), async (req, res) => {
+app.post("/api/upload-document", upload.single("file"), async (req, res) => {
   try {
     const { ownerName, village } = req.body;
     const file = req.file;
@@ -275,6 +282,26 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
       console.log("📋 Record ID from count:", recordId);
     }
 
+    // Log upload to history
+    // Log upload to history
+    try {
+      await axios.post(`http://localhost:${PORT}/api/upload/log-upload`, {
+        recordId,
+        ownerName,
+        village,
+        documentHash,
+        ipfsCID: ipfsResult.ipfsHash,
+        ipfsUrl: ipfsResult.ipfsUrl,
+        transactionHash: receipt.hash,
+        blockNumber: receipt.blockNumber,
+        uploadedBy: wallet.address
+      });
+      console.log("✅ Upload logged to history");
+    } catch (historyError) {
+      console.error("⚠️ Failed to log upload history:", historyError.message);
+      // Don't fail the request if history logging fails
+    }
+
     res.json({
       success: true,
       data: {
@@ -328,6 +355,7 @@ app.post("/api/verify", upload.single("file"), async (req, res) => {
       recordDetails: {
         ownerName: record.ownerName,
         village: record.village,
+        currentOwner: record.currentOwner,
         timestamp: new Date(Number(record.timestamp) * 1000).toLocaleString(),
       },
       message: verified
