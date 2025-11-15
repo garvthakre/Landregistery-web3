@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./components/LanguageSwitcher";
 import HistoryPage from "./pages/HistoryPage";
 import AuthPage from "./pages/SignupPage";
+import PatwariGeoTagging from "./pages/PatwariGeoTagging";
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -241,6 +242,15 @@ const AppContent = () => {
               <ProtectedRoute>
                 <HistoryPage/>
               </ProtectedRoute>
+            }
+            />
+
+            <Route
+            path="/map"
+            element={
+              // <ProtectedRoute>
+                <PatwariGeoTagging/>
+              // </ProtectedRoute>
             }
             />
         </Routes>
