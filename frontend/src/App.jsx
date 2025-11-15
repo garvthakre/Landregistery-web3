@@ -10,7 +10,7 @@ import TransferPage from "./pages/TransferPage";
 import ALanding from "./pages/A-Landing";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./components/LanguageSwitcher";
-import TestComponent from "./components/TestComponent";
+// import TestComponent from "./components/TestComponent";
 import HistoryPage from "./pages/HistoryPage";
 
 const ProtectedRoute = ({ children }) => {
