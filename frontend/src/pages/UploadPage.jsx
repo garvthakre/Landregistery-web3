@@ -8,13 +8,14 @@ const UploadPage = () => {
     ownerName: '',
     village: '',
     file: null,
+    claimedArea: '',
+    unit: 'acres'
   });
   const [uploadResult, setUploadResult] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrData, setOcrData] = useState(null);
   const [processingSteps, setProcessingSteps] = useState([]);
-
   const STEPS = [
     { id: 1, name: 'Analyzing Document', icon: Scan, color: 'blue', description: 'Extracting data via OCR' },
     { id: 2, name: 'Calculating Hash', icon: Hash, color: 'purple', description: 'Computing SHA-256 hash' },
@@ -74,13 +75,14 @@ const UploadPage = () => {
       if (result.success) {
         setOcrData(result.data);
         
-        if (result.data.ownerName) {
-          setFormData(prev => ({ 
-            ...prev, 
-            ownerName: result.data.ownerName,
-            village: result.data.village || prev.village
-          }));
-        }
+        // Auto-fill form fields
+        setFormData(prev => ({ 
+          ...prev, 
+          ownerName: result.data.ownerName || prev.ownerName,
+          village: result.data.village || prev.village,
+          landArea: result.data.landArea || prev.landArea,
+          unit: result.data.unit || prev.unit
+        }));
       } else {
         console.error('OCR failed:', result.error);
       }
@@ -99,19 +101,19 @@ const UploadPage = () => {
     setCurrentStep(0);
 
     try {
-      // Step 1: Analyzing Document (if image, already done with OCR)
+      // Step 1: Analyzing Document
       setCurrentStep(0);
       updateStep(0, 'processing');
       await new Promise(resolve => setTimeout(resolve, 1000));
       updateStep(0, 'completed', 'Document analyzed successfully');
 
-      // Step 2: Calculate Hash (happens on server)
+      // Step 2: Calculate Hash
       setCurrentStep(1);
       updateStep(1, 'processing');
       await new Promise(resolve => setTimeout(resolve, 1500));
       updateStep(1, 'completed', 'Hash calculated');
 
-      // Step 3-6: Upload to backend
+      // Step 3: Upload to backend
       setCurrentStep(2);
       updateStep(2, 'processing');
       
@@ -119,6 +121,8 @@ const UploadPage = () => {
       data.append('file', formData.file);
       data.append('ownerName', formData.ownerName);
       data.append('village', formData.village);
+      data.append('landArea', formData.landArea);
+      data.append('unit', formData.unit);
 
       const response = await fetch(`${API_URL}/upload-document`, {
         method: 'POST',
@@ -156,7 +160,7 @@ const UploadPage = () => {
         
         // Reset form
         setTimeout(() => {
-          setFormData({ ownerName: '', village: '', file: null });
+          setFormData({ ownerName: '', village: '', landArea: '', unit: 'acres', file: null });
           setOcrData(null);
           const fileInput = document.querySelector('input[type="file"]');
           if (fileInput) fileInput.value = '';
@@ -258,7 +262,7 @@ const UploadPage = () => {
                 </div>
               )}
 
-              {/* OCR Results */}
+              {/* OCR Results - FIXED: Single display section */}
               {ocrData && !ocrLoading && (
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 shadow-lg">
                   <div className="flex items-start gap-3">
@@ -270,12 +274,32 @@ const UploadPage = () => {
                         ✅ Document Analyzed Successfully
                       </p>
                       <div className="grid grid-cols-2 gap-3">
-                        {Object.entries(ocrData).map(([key, value]) => value && (
-                          <div key={key} className="bg-white rounded-lg p-2 shadow-sm">
-                            <span className="text-xs text-gray-600 block capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
-                            <span className="text-sm font-semibold text-gray-800">{value}</span>
+                        {ocrData.ownerName && (
+                          <div className="bg-white rounded-lg p-2 shadow-sm">
+                            <span className="text-xs text-gray-600 block">Owner Name:</span>
+                            <span className="text-sm font-semibold text-gray-800">{ocrData.ownerName}</span>
                           </div>
-                        ))}
+                        )}
+                        {ocrData.village && (
+                          <div className="bg-white rounded-lg p-2 shadow-sm">
+                            <span className="text-xs text-gray-600 block">Village:</span>
+                            <span className="text-sm font-semibold text-gray-800">{ocrData.village}</span>
+                          </div>
+                        )}
+                        {ocrData.landArea && (
+                          <div className="bg-white rounded-lg p-2 shadow-sm">
+                            <span className="text-xs text-gray-600 block">Land Area:</span>
+                            <span className="text-sm font-semibold text-gray-800">
+                              {ocrData.landArea} {ocrData.unit || 'acres'}
+                            </span>
+                          </div>
+                        )}
+                        {ocrData.surveyNumber && (
+                          <div className="bg-white rounded-lg p-2 shadow-sm">
+                            <span className="text-xs text-gray-600 block">Survey Number:</span>
+                            <span className="text-sm font-semibold text-gray-800">{ocrData.surveyNumber}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -314,11 +338,45 @@ const UploadPage = () => {
                 />
               </div>
 
+              {/* Land Area */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Land Area * (from document)
+                </label>
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="landArea"
+                    value={formData.landArea}
+                    onChange={handleInputChange}
+                    required
+                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    placeholder="e.g., 2.5"
+                  />
+                  <select
+                    name="unit"
+                    value={formData.unit}
+                    onChange={handleInputChange}
+                    required
+                    className="px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  >
+                    <option value="acres">Acres</option>
+                    <option value="hectares">Hectares</option>
+                    <option value="square meters">Sq Meters</option>
+                    <option value="bigha">Bigha</option>
+                  </select>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Enter the land area as shown in your document
+                </p>
+              </div>
+
               {/* Submit Button */}
               <button
                 onClick={handleUpload}
                 disabled={processingSteps.length > 0 && !uploadResult}
-                className="w-full p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white py-4 rounded-xl font-bold text-lg hover:from-green-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {processingSteps.length > 0 && !uploadResult ? (
                   <span className="flex items-center justify-center gap-2">

@@ -13,7 +13,9 @@ import LanguageSwitcher from "./components/LanguageSwitcher";
 import HistoryPage from "./pages/HistoryPage";
 import AuthPage from "./pages/SignupPage";
 import PatwariGeoTagging from "./pages/PatwariGeoTagging";
-
+import AdminGeoVerification from "./pages/AdminGeoVerification";
+import AdminVerifyPage from "./pages/AdminVerifyPage";
+import {  MapPin } from "lucide-react";
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -38,7 +40,15 @@ const Navigation = () => {
   const location = useLocation();
 
   const {t} = useTranslation();
-
+  {isAdmin && (
+  <Link
+    to="/admin-geo-verification"
+    className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
+  >
+    <MapPin className="w-5 h-5" />
+    <span>Geo Verification</span>
+  </Link>
+)}
   // console.log("Now params:: ", location.pathname)
 
   const handleLogout = () => {
@@ -216,6 +226,22 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <VerifyPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+  path="/admin-geo-verification"
+  element={
+    <ProtectedRoute>
+      <AdminGeoVerification/>
+    </ProtectedRoute>
+  }
+/>
+    <Route
+            path="/tag-verify"
+            element={
+              <ProtectedRoute>
+                <AdminVerifyPage />
               </ProtectedRoute>
             }
           />
