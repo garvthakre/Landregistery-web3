@@ -11,6 +11,7 @@ import ALanding from "./pages/A-Landing";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./components/LanguageSwitcher";
 import TestComponent from "./components/TestComponent";
+import HistoryPage from "./pages/HistoryPage";
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -238,7 +239,7 @@ const AppContent = () => {
             path="/history"
             element={
               <ProtectedRoute>
-                {/* <HistoryPage/> */} <div>ADD Histry Page here</div>
+                <HistoryPage/>
               </ProtectedRoute>
             }
             />
