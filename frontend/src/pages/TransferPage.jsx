@@ -408,9 +408,9 @@ const TransferPage = () => {
     <div className="max-w-7xl mx-auto mt-8 px-4 space-y-8">
       {/* Initiate Transfer Section */}
       <div className="grid lg:grid-cols-2 gap-8">
-        <div className="bg-gradient-to-br from-white to-emerald-50 rounded-2xl shadow-2xl p-8 border border-emerald-100">
+        <div className="bg-white from-white to-emerald-50 rounded-2xl  p-8 border border-gray-400">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+            <div className="p-3 bg-green-600 rounded-xl shadow-lg">
               <Send className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -463,7 +463,7 @@ const TransferPage = () => {
             <button
               onClick={handleInitiateTransfer}
               disabled={isProcessing || loadingRecords}
-              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 text-white py-4 rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
             >
               {isProcessing ? (
                 <span className="flex items-center justify-center gap-2">
@@ -472,7 +472,6 @@ const TransferPage = () => {
                 </span>
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  <ArrowRight className="w-5 h-5" />
                   Send Transfer Request
                 </span>
               )}

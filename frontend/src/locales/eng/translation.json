@@ -32,5 +32,19 @@
     "installMetaMask": "Please install MetaMask to continue",
     "loginFailed": "Login failed",
     "signupFailed": "Signup failed"
+  },
+  "landing": {
+    "heroTitle1": "Decentralized ",
+    "heroTitle2": "Tribal Land",
+    "heroTitle3": "Registry",
+    "heroText": "Web3 Powered Land Governance",
+    "heroP1": "A decentralized, blockchain-powered land registry system that ensures transparency, immutability, and community control over land records",
+    "heroP2": "Preserving tribal rights and preventing unlawful displacement.",
+    "getStarted": "Get Started",
+    "listYourLand": "List your Land",
+
+    "featH1":"Powerful Features for",
+    "fetH2":"Land Protection"
+
   }
 }

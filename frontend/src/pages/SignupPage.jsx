@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Shield, Wallet, Loader2, CheckCircle, AlertCircle, Key } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const API_URL = "http://localhost:5000/api";
 
@@ -18,6 +19,8 @@ const AuthPage = ({ mode = 'login' }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const {t} = useTranslation();
   const [step, setStep] = useState(1);
 
   useEffect(() => {
@@ -139,20 +142,10 @@ const AuthPage = ({ mode = 'login' }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 py-12 px-4">
+    <div className="min-h-screen bg-white py-12 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex p-4 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl shadow-lg mb-4">
-            <Shield className="w-12 h-12 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            {isLogin ? 'Welcome Back' : 'Create Account'}
-          </h1>
-          <p className="text-gray-600">
-            {isLogin ? 'Sign in to access your land records' : 'Register for blockchain land registry'}
-          </p>
-        </div>
+        
 
         {/* Mode Toggle */}
         <div className="flex justify-center mb-8">
@@ -165,7 +158,7 @@ const AuthPage = ({ mode = 'login' }) => {
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              Login
+              {t("nav.login")}
             </button>
             <button
               onClick={() => isLogin && toggleMode()}
@@ -175,7 +168,7 @@ const AuthPage = ({ mode = 'login' }) => {
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              Signup
+              {t("nav.signup")}
             </button>
           </div>
         </div>
@@ -299,7 +292,7 @@ const AuthPage = ({ mode = 'login' }) => {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     <Shield className="w-4 h-4 inline mr-1" />
-                    Aadhar Number * {!isLogin && '(12 digits)'}
+                    {t("auth.aadhaarNumber")} * {!isLogin && '(12 digits)'}
                   </label>
                   <input
                     type="text"
@@ -316,7 +309,7 @@ const AuthPage = ({ mode = 'login' }) => {
                 {!isLogin && (
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Phone Number * (10 digits)
+                      {t("auth.phoneNumber")} * (10 digits)
                     </label>
                     <input
                       type="text"
@@ -351,7 +344,7 @@ const AuthPage = ({ mode = 'login' }) => {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     <Key className="w-4 h-4 inline mr-1" />
-                    Password *
+                    {t("auth.password")} *
                   </label>
                   <input
                     type="password"
@@ -360,13 +353,13 @@ const AuthPage = ({ mode = 'login' }) => {
                     onChange={handleChange}
                     required
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                    placeholder="Enter password"
+                    placeholder={t("auth.password")}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Patwari ID (Admin only - Optional)
+                    {t("auth.patwariId")} (Admin only - Optional)
                   </label>
                   <input
                     type="text"

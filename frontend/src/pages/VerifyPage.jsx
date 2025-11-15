@@ -158,7 +158,7 @@ const VerifyPage = () => {
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Left Column - Verify Form */}
         <div className="space-y-6">
-          <div className="bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-2xl p-8 border border-green-100">
+          <div className="bg-white rounded-2xl p-8 border border-gray-400">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
                 <Shield className="w-6 h-6 text-white" />
@@ -210,7 +210,7 @@ const VerifyPage = () => {
               <button
                 onClick={handleVerify}
                 disabled={isVerifying}
-                className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-4 rounded-xl font-bold text-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isVerifying ? (
                   <span className="flex items-center justify-center gap-2">
@@ -219,7 +219,6 @@ const VerifyPage = () => {
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    <Shield className="w-5 h-5" />
                     Verify Document
                   </span>
                 )}
