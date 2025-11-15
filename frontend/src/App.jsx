@@ -10,7 +10,6 @@ import TransferPage from "./pages/TransferPage";
 import ALanding from "./pages/A-Landing";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./components/LanguageSwitcher";
-// import TestComponent from "./components/TestComponent";
 import HistoryPage from "./pages/HistoryPage";
 
 const ProtectedRoute = ({ children }) => {
@@ -81,7 +80,7 @@ const Navigation = () => {
           :
           <div className="flex items-center gap-6">
             <Link
-              to="/"
+              to="/upload"
               className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
             >
               <Upload className="w-5 h-5" />
