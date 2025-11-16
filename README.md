@@ -2,6 +2,10 @@
 A Web3-powered land governance system that secures tribal land rights using **blockchain**, **AI**, and **geo-tagged verification**. The platform ensures transparency, prevents manipulation of land records, and establishes a trusted workflow between landowners and authorities.
 
 ---
+<img width="1902" height="865" alt="land-registry-ui" src="https://github.com/user-attachments/assets/2d2b18d2-4ca7-4808-95b4-03c67fa6f15d" />
+
+### YouTube Link -> https://youtu.be/m40BFgn-Oqo
+---
 
 ## Introduction  
 Tribal communities often face land record manipulation, missing documentation, and unauthorized boundary changes. Traditional systems rely on fragile paper records and opaque verification processes.
@@ -43,6 +47,7 @@ Web3 ensures land rights are protected **permanently and transparently**.
 ---
 
 ## System Flow
+<img width="1280" height="720" alt="workflow" src="https://github.com/user-attachments/assets/6bd3b661-4a2b-421f-9e94-ec2b87621121" />
 
 ### **1. Landowner Registration / KYC**  
 User creates an account and verifies identity. Wallet (MetaMask) is linked.
