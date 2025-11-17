@@ -15,7 +15,8 @@ import AuthPage from "./pages/SignupPage";
 import PatwariGeoTagging from "./pages/PatwariGeoTagging";
 import AdminGeoVerification from "./pages/AdminGeoVerification";
 import AdminVerifyPage from "./pages/AdminVerifyPage";
-import {  MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
+
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -40,16 +41,6 @@ const Navigation = () => {
   const location = useLocation();
 
   const {t} = useTranslation();
-  {isAdmin && (
-  <Link
-    to="/admin-geo-verification"
-    className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
-  >
-    <MapPin className="w-5 h-5" />
-    <span>Geo Verification</span>
-  </Link>
-)}
-  // console.log("Now params:: ", location.pathname)
 
   const handleLogout = () => {
     logout();
@@ -57,161 +48,152 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="bg-white text-black">
+    <nav className="bg-white text-black relative z-20">
       <div className="px-4 py-6 border-b border-gray-400">
         <div className="flex items-center justify-between">
           <div>
             <Link to="/">
-            <h1 className="text-2xl font-bold">{t("nav.title")}</h1>
+              <h1 className="text-2xl font-bold custom-font text-emerald-600 tracking-wide ml-6">{t("nav.title")}</h1>
             </Link>
           </div>
 
-
-          {(location.pathname==="/")
-          ?
-          <div className="flex items-center gap-6">
-            <Link
-              to="/"
-              className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
-            >
-              <span>{t("nav.features")}</span>
-            </Link>
-            <Link
-              to="/"
-              className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
-            >
-              <span>{t("nav.seeInAction")}</span>
-            </Link>
-            <Link
-              to="/"
-              className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
-            >
-              <span>{t("nav.workflow")}</span>
-            </Link>
-          </div>
-          :
-          <div className="flex items-center gap-6">
-            <Link
-              to="/upload"
-              className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
-            >
-              <Upload className="w-5 h-5" />
-              <span>{t("nav.upload")}</span>
-            </Link>
-            <Link
-              to="/verify"
-              className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
-            >
-              <FileText className="w-5 h-5" />
-              <span>{t("nav.verify")}</span>
-            </Link>
-            <Link
-              to="/transfer"
-              className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
-            >
-              <Users className="w-5 h-5" />
-              <span>{t("nav.transfer")}</span>
-            </Link>
-          </div>
+          {(location.pathname === "/")
+            ?
+            <div className="flex items-center gap-6">
+              <Link
+                to="/"
+                className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
+              >
+                <span>{t("nav.features")}</span>
+              </Link>
+              <Link
+                to="/"
+                className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
+              >
+                <span>{t("nav.seeInAction")}</span>
+              </Link>
+              <Link
+                to="/"
+                className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
+              >
+                <span>{t("nav.workflow")}</span>
+              </Link>
+            </div>
+            :
+            <div className="flex items-center gap-6">
+              <Link
+                to="/upload"
+                className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
+              >
+                <Upload className="w-5 h-5" />
+                <span>{t("nav.upload")}</span>
+              </Link>
+              <Link
+                to="/verify"
+                className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
+              >
+                <FileText className="w-5 h-5" />
+                <span>{t("nav.verify")}</span>
+              </Link>
+              <Link
+                to="/transfer"
+                className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
+              >
+                <Users className="w-5 h-5" />
+                <span>{t("nav.transfer")}</span>
+              </Link>
+              {isAdmin && (
+                <Link
+                  to="/admin-geo-verification"
+                  className="flex items-center gap-2 hover:bg-white/10 px-4 py-2 rounded-lg transition-colors"
+                >
+                  <MapPin className="w-5 h-5" />
+                  <span>Geo Verification</span>
+                </Link>
+              )}
+            </div>
           }
 
-          
-          {(location.pathname==="/")
-          ?
-          <div className="flex items-center gap-4">
+          {(location.pathname === "/")
+            ?
+            <div className="flex items-center gap-4">
+              <LanguageSwitcher />
 
-                        <LanguageSwitcher />
+              <button
+                onClick={() => navigate("/signup")}
+                className="bg-gray-300 text-black px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
+              >
+                {t("nav.signup")}
+              </button>
 
-            {/* User Info */}
-            <button
-              onClick={()=>navigate("/signup")}
-              className="bg-gray-300 text-black px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
-            >
-{t("nav.signup")}            </button>
-
-            {/* Wallet Status */}
-            {account && (
-              <div className="bg-gray-300 px-4 py-2 rounded-lg">
-                <p className="text-xs text-gray-700 font-bold">Wallet</p>
-                <p className="text-sm font-mono">
-                  {account.slice(0, 6)}...{account.slice(-4)}
-                </p>
-              </div>
-            )}
-
-            {/* Logout Button */}
-            <button
-              onClick={()=>navigate("/login")}
-              className="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
-            >
-{t("nav.login")}            </button>
-          </div>
-          :
-          <div className="flex items-center gap-4">
-                                    <LanguageSwitcher />
-
-            {/* User Info */}
-            <div className="bg-gray-300 px-4 py-2 rounded-lg">
-              <div className="flex items-center gap-2">
-                <div className="flex gap-3 items-center justify-center">
-                  <User className="w-4 h-4" />
-                  <p className="text-xs font-bold text-gray-700">
-                    {isAdmin ? "Admin" : "User :"}
+              {account && (
+                <div className="bg-gray-300 px-4 py-2 rounded-lg">
+                  <p className="text-xs text-gray-700 font-bold">Wallet</p>
+                  <p className="text-sm font-mono">
+                    {account.slice(0, 6)}...{account.slice(-4)}
                   </p>
-                  <p className="text-sm font-semibold">{user?.name}</p>
+                </div>
+              )}
+
+              <button
+                onClick={() => navigate("/login")}
+                className="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
+              >
+                {t("nav.login")}
+              </button>
+            </div>
+            :
+            <div className="flex items-center gap-4">
+              <LanguageSwitcher />
+
+              <div className="bg-gray-300 px-4 py-2 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-3 items-center justify-center">
+                    <User className="w-4 h-4" />
+                    <p className="text-xs font-bold text-gray-700">
+                      {isAdmin ? "Admin" : "User :"}
+                    </p>
+                    <p className="text-sm font-semibold">{user?.name}</p>
+                  </div>
                 </div>
               </div>
+
+              {account && (
+                <div className="bg-gray-300 px-4 py-2 rounded-lg">
+                  <p className="text-xs text-gray-700 font-bold">Wallet</p>
+                  <p className="text-sm font-mono">
+                    {account.slice(0, 6)}...{account.slice(-4)}
+                  </p>
+                </div>
+              )}
+
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
             </div>
-
-            {/* Wallet Status */}
-            {account && (
-              <div className="bg-gray-300 px-4 py-2 rounded-lg">
-                <p className="text-xs text-gray-700 font-bold">Wallet</p>
-                <p className="text-sm font-mono">
-                  {account.slice(0, 6)}...{account.slice(-4)}
-                </p>
-              </div>
-            )}
-
-            {/* Logout Button */}
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
-          </div>
           }
         </div>
       </div>
-
-      {(location.pathname==="/") &&
-      <div className='flex'>
-        <img src="/land-1.jpg" alt="land-image" className="w-full h-50 object-cover"/>
-
-      </div>
-      }
     </nav>
   );
 };
 
 const AppContent = () => {
-  // const { isAuthenticated } = useAuth();  // isAuthenticated && 
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {<Navigation />}
-      <div className="container mx-auto px-4 py-2">
+      <Navigation />
+      <div className={useLocation().pathname === "/" ? "" : "container mx-auto px-4 py-2"}>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={< AuthPage />} />
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="/signup" element={<AuthPage />} />
 
           <Route
             path="/"
-            element={
-                <ALanding />
-            }
+            element={<ALanding />}
           />
           <Route
             path="/upload"
@@ -230,14 +212,14 @@ const AppContent = () => {
             }
           />
           <Route
-  path="/admin-geo-verification"
-  element={
-    <ProtectedRoute>
-      <AdminGeoVerification/>
-    </ProtectedRoute>
-  }
-/>
-    <Route
+            path="/admin-geo-verification"
+            element={
+              <ProtectedRoute>
+                <AdminGeoVerification />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/tag-verify"
             element={
               <ProtectedRoute>
@@ -249,7 +231,7 @@ const AppContent = () => {
             path="/history"
             element={
               <ProtectedRoute>
-                <HistoryPage/>
+                <HistoryPage />
               </ProtectedRoute>
             }
           />
@@ -263,25 +245,12 @@ const AppContent = () => {
           />
 
           <Route
-            path="/history"
-            element={
-              <ProtectedRoute>
-                <HistoryPage/>
-              </ProtectedRoute>
-            }
-            />
-
-            <Route
             path="/map"
             element={
-              // <ProtectedRoute>
-                <PatwariGeoTagging/>
-              // </ProtectedRoute>
+              <PatwariGeoTagging />
             }
-            />
+          />
         </Routes>
-
-        
       </div>
     </div>
   );
