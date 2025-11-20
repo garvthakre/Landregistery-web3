@@ -34,5 +34,17 @@
     "role": "admin",
     "walletAddress": "0x50551393547d619946dd2589f53de9b497bb0c8b",
     "createdAt": "2025-11-15T02:34:33.021Z"
+  },
+  {
+    "id": "1763185953036",
+    "name": "Shyam Agarwal",
+    "aadharNo": "901135826940",
+    "phoneNo": "9691383641",
+    "address": "naya raipur",
+    "password": "12345",
+    "patwariId": null,
+    "role": "user",
+    "walletAddress": "0x1aff093be5e04f9f6825b31ce760dd32bec79807",
+    "createdAt": "2025-11-15T05:52:33.036Z"
   }
 ]

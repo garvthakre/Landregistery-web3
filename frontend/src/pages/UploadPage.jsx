@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Loader2, CheckCircle, XCircle, Scan, FileText, Lock, Database, Rocket, Shield, Hash, ExternalLink } from 'lucide-react';
+import { Upload, Loader2, CheckCircle, XCircle, Scan, FileText, Lock, Database, Rocket, Shield, Hash, ExternalLink, AlertCircle } from 'lucide-react';
 
 const API_URL = "http://localhost:5000/api";
 
@@ -8,21 +8,24 @@ const UploadPage = () => {
     ownerName: '',
     village: '',
     file: null,
-    claimedArea: '',
+    landArea: '',
     unit: 'acres'
   });
   const [uploadResult, setUploadResult] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrData, setOcrData] = useState(null);
+  const [validationResult, setValidationResult] = useState(null);
   const [processingSteps, setProcessingSteps] = useState([]);
+  
   const STEPS = [
     { id: 1, name: 'Analyzing Document', icon: Scan, color: 'blue', description: 'Extracting data via OCR' },
-    { id: 2, name: 'Calculating Hash', icon: Hash, color: 'purple', description: 'Computing SHA-256 hash' },
-    { id: 3, name: 'Uploading to IPFS', icon: Database, color: 'green', description: 'Storing on decentralized storage' },
-    { id: 4, name: 'Creating Smart Contract', icon: Lock, color: 'orange', description: 'Preparing blockchain transaction' },
-    { id: 5, name: 'Broadcasting to Network', icon: Rocket, color: 'pink', description: 'Sending to blockchain network' },
-    { id: 6, name: 'Confirming on Blockchain', icon: Shield, color: 'indigo', description: 'Waiting for confirmation' },
+    { id: 2, name: 'Validating Data', icon: CheckCircle, color: 'purple', description: 'Matching document with input' },
+    { id: 3, name: 'Calculating Hash', icon: Hash, color: 'cyan', description: 'Computing SHA-256 hash' },
+    { id: 4, name: 'Uploading to IPFS', icon: Database, color: 'green', description: 'Storing on decentralized storage' },
+    { id: 5, name: 'Creating Smart Contract', icon: Lock, color: 'orange', description: 'Preparing blockchain transaction' },
+    { id: 6, name: 'Broadcasting to Network', icon: Rocket, color: 'pink', description: 'Sending to blockchain network' },
+    { id: 7, name: 'Confirming on Blockchain', icon: Shield, color: 'indigo', description: 'Waiting for confirmation' },
   ];
 
   const updateStep = (stepIndex, status, message = '') => {
@@ -44,6 +47,62 @@ const UploadPage = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear validation when user changes input
+    if (ocrData) {
+      setValidationResult(null);
+    }
+  };
+
+  const normalizeString = (str) => {
+    if (!str) return '';
+    return str.toString().toLowerCase().trim().replace(/\s+/g, ' ');
+  };
+
+  const validateData = (ocrExtracted, userInput) => {
+    const results = {
+      ownerName: { match: false, confidence: 0 },
+      village: { match: false, confidence: 0 },
+      landArea: { match: false, confidence: 0 }
+    };
+
+    // Validate Owner Name
+    if (ocrExtracted.ownerName && userInput.ownerName) {
+      const ocrName = normalizeString(ocrExtracted.ownerName);
+      const inputName = normalizeString(userInput.ownerName);
+      results.ownerName.match = ocrName === inputName;
+      results.ownerName.confidence = results.ownerName.match ? 100 : 
+        (ocrName.includes(inputName) || inputName.includes(ocrName)) ? 50 : 0;
+    }
+
+    // Validate Village
+    if (ocrExtracted.village && userInput.village) {
+      const ocrVillage = normalizeString(ocrExtracted.village);
+      const inputVillage = normalizeString(userInput.village);
+      results.village.match = ocrVillage === inputVillage;
+      results.village.confidence = results.village.match ? 100 : 
+        (ocrVillage.includes(inputVillage) || inputVillage.includes(ocrVillage)) ? 50 : 0;
+    }
+
+    // Validate Land Area
+    if (ocrExtracted.landArea && userInput.landArea) {
+      const ocrArea = parseFloat(ocrExtracted.landArea);
+      const inputArea = parseFloat(userInput.landArea);
+      const difference = Math.abs(ocrArea - inputArea);
+      const percentDiff = (difference / ocrArea) * 100;
+      
+      results.landArea.match = percentDiff < 5; // Allow 5% difference
+      results.landArea.confidence = percentDiff < 5 ? 100 : percentDiff < 10 ? 70 : 30;
+    }
+
+    const allMatch = results.ownerName.match && results.village.match && results.landArea.match;
+    const avgConfidence = (results.ownerName.confidence + results.village.confidence + results.landArea.confidence) / 3;
+
+    return {
+      success: allMatch,
+      confidence: Math.round(avgConfidence),
+      details: results
+    };
   };
 
   const handleFileChange = async (e) => {
@@ -53,8 +112,9 @@ const UploadPage = () => {
     setFormData(prev => ({ ...prev, file }));
     setOcrData(null);
     setUploadResult(null);
+    setValidationResult(null);
 
-    if (file.type.startsWith('image/')) {
+    if (file.type.startsWith('image/') || file.type === 'application/pdf') {
       await performOCR(file);
     }
   };
@@ -75,12 +135,12 @@ const UploadPage = () => {
       if (result.success) {
         setOcrData(result.data);
         
-        // Auto-fill form fields
+        // Auto-fill form fields if empty
         setFormData(prev => ({ 
           ...prev, 
-          ownerName: result.data.ownerName || prev.ownerName,
-          village: result.data.village || prev.village,
-          landArea: result.data.landArea || prev.landArea,
+          ownerName: prev.ownerName || result.data.ownerName || '',
+          village: prev.village || result.data.village || '',
+          landArea: prev.landArea || result.data.landArea || '',
           unit: result.data.unit || prev.unit
         }));
       } else {
@@ -91,6 +151,20 @@ const UploadPage = () => {
     } finally {
       setOcrLoading(false);
     }
+  };
+
+  const handleValidateBeforeUpload = () => {
+    if (!ocrData) {
+      setValidationResult({
+        success: false,
+        message: 'Please upload a document first for validation'
+      });
+      return false;
+    }
+
+    const validation = validateData(ocrData, formData);
+    setValidationResult(validation);
+    return validation.success;
   };
 
   const handleUpload = async (e) => {
@@ -104,18 +178,43 @@ const UploadPage = () => {
       // Step 1: Analyzing Document
       setCurrentStep(0);
       updateStep(0, 'processing');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      if (!ocrData) {
+        updateStep(0, 'error', 'No document data found');
+        throw new Error('Please upload and analyze a document first');
+      }
+      
       updateStep(0, 'completed', 'Document analyzed successfully');
 
-      // Step 2: Calculate Hash
+      // Step 2: Validate Data
       setCurrentStep(1);
       updateStep(1, 'processing');
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      updateStep(1, 'completed', 'Hash calculated');
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      const validation = validateData(ocrData, formData);
+      setValidationResult(validation);
+      
+      if (!validation.success) {
+        updateStep(1, 'error', `Validation failed - ${validation.confidence}% match`);
+        setUploadResult({
+          success: false,
+          message: 'Document data does not match your input. Please verify and correct the information.'
+        });
+        return;
+      }
+      
+      updateStep(1, 'completed', `✓ 100% match confirmed`);
 
-      // Step 3: Upload to backend
+      // Step 3: Calculate Hash
       setCurrentStep(2);
       updateStep(2, 'processing');
+      await new Promise(resolve => setTimeout(resolve, 700));
+      updateStep(2, 'completed', 'Hash calculated');
+
+      // Step 4: Upload to IPFS
+      setCurrentStep(3);
+      updateStep(3, 'processing');
       
       const data = new FormData();
       data.append('file', formData.file);
@@ -129,28 +228,28 @@ const UploadPage = () => {
         body: data,
       });
 
-      updateStep(2, 'completed', 'Uploaded to IPFS');
+      updateStep(3, 'completed', 'Uploaded to IPFS');
 
-      // Step 4: Smart Contract
-      setCurrentStep(3);
-      updateStep(3, 'processing');
-      await new Promise(resolve => setTimeout(resolve, 800));
-      updateStep(3, 'completed', 'Smart contract created');
-
-      // Step 5: Broadcasting
+      // Step 5: Smart Contract
       setCurrentStep(4);
       updateStep(4, 'processing');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      updateStep(4, 'completed', 'Broadcasted to network');
+      await new Promise(resolve => setTimeout(resolve, 600));
+      updateStep(4, 'completed', 'Smart contract created');
 
-      // Step 6: Confirmation
+      // Step 6: Broadcasting
       setCurrentStep(5);
       updateStep(5, 'processing');
+      await new Promise(resolve => setTimeout(resolve, 800));
+      updateStep(5, 'completed', 'Broadcasted to network');
+
+      // Step 7: Confirmation
+      setCurrentStep(6);
+      updateStep(6, 'processing');
       
       const result = await response.json();
 
       if (result.success) {
-        updateStep(5, 'completed', 'Confirmed on blockchain');
+        updateStep(6, 'completed', 'Confirmed on blockchain');
         
         setUploadResult({
           success: true,
@@ -158,15 +257,16 @@ const UploadPage = () => {
           data: result.data,
         });
         
-        // Reset form
+        // Reset form after 5 seconds
         setTimeout(() => {
           setFormData({ ownerName: '', village: '', landArea: '', unit: 'acres', file: null });
           setOcrData(null);
+          setValidationResult(null);
           const fileInput = document.querySelector('input[type="file"]');
           if (fileInput) fileInput.value = '';
         }, 5000);
       } else {
-        updateStep(5, 'error', result.error);
+        updateStep(6, 'error', result.error);
         setUploadResult({ 
           success: false, 
           message: result.error || 'Upload failed' 
@@ -178,7 +278,7 @@ const UploadPage = () => {
       updateStep(failedStep, 'error', error.message);
       setUploadResult({ 
         success: false, 
-        message: 'Upload failed: ' + error.message 
+        message: error.message || 'Upload failed'
       });
     }
   };
@@ -191,6 +291,7 @@ const UploadPage = () => {
       orange: 'from-orange-500 to-orange-600',
       pink: 'from-pink-500 to-pink-600',
       indigo: 'from-indigo-500 to-indigo-600',
+      cyan: 'from-cyan-500 to-cyan-600',
     };
     return colors[color] || colors.blue;
   };
@@ -203,12 +304,15 @@ const UploadPage = () => {
       orange: 'border-orange-500',
       pink: 'border-pink-500',
       indigo: 'border-indigo-500',
+      cyan: 'border-cyan-500',
     };
     return colors[color] || colors.blue;
   };
 
+  const canSubmit = formData.file && formData.ownerName && formData.village && formData.landArea && ocrData;
+
   return (
-    <div className="max-w-6xl mx-auto mt-8 px-4">
+    <div className="max-w-6xl mx-auto mt-8 px-4 pb-8">
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Left Column - Upload Form */}
         <div className="space-y-6">
@@ -222,7 +326,7 @@ const UploadPage = () => {
                   Upload Land Document
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">
-                  Secure blockchain registration
+                  Secure blockchain registration with auto-validation
                 </p>
               </div>
             </div>
@@ -241,7 +345,7 @@ const UploadPage = () => {
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 />
                 <p className="text-xs text-gray-500">
-                  Supported: PDF, JPG, PNG (max 10MB)
+                  📄 Upload document for automatic data extraction
                 </p>
               </div>
 
@@ -262,7 +366,7 @@ const UploadPage = () => {
                 </div>
               )}
 
-              {/* OCR Results - FIXED: Single display section */}
+              {/* OCR Results */}
               {ocrData && !ocrLoading && (
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 shadow-lg">
                   <div className="flex items-start gap-3">
@@ -271,12 +375,12 @@ const UploadPage = () => {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-green-800 mb-3">
-                        ✅ Document Analyzed Successfully
+                        ✅ Document Scanned Successfully
                       </p>
                       <div className="grid grid-cols-2 gap-3">
                         {ocrData.ownerName && (
                           <div className="bg-white rounded-lg p-2 shadow-sm">
-                            <span className="text-xs text-gray-600 block">Owner Name:</span>
+                            <span className="text-xs text-gray-600 block">Owner:</span>
                             <span className="text-sm font-semibold text-gray-800">{ocrData.ownerName}</span>
                           </div>
                         )}
@@ -287,17 +391,45 @@ const UploadPage = () => {
                           </div>
                         )}
                         {ocrData.landArea && (
-                          <div className="bg-white rounded-lg p-2 shadow-sm">
-                            <span className="text-xs text-gray-600 block">Land Area:</span>
+                          <div className="bg-white rounded-lg p-2 shadow-sm col-span-2">
+                            <span className="text-xs text-gray-600 block">Area:</span>
                             <span className="text-sm font-semibold text-gray-800">
                               {ocrData.landArea} {ocrData.unit || 'acres'}
                             </span>
                           </div>
                         )}
-                        {ocrData.surveyNumber && (
-                          <div className="bg-white rounded-lg p-2 shadow-sm">
-                            <span className="text-xs text-gray-600 block">Survey Number:</span>
-                            <span className="text-sm font-semibold text-gray-800">{ocrData.surveyNumber}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Validation Result */}
+              {validationResult && !validationResult.success && (
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-yellow-800 mb-2">
+                        ⚠️ Validation Warning
+                      </p>
+                      <div className="space-y-2 text-xs">
+                        {!validationResult.details.ownerName.match && (
+                          <div className="flex items-center gap-2">
+                            <XCircle className="w-3 h-3 text-red-500" />
+                            <span className="text-gray-700">Owner name mismatch</span>
+                          </div>
+                        )}
+                        {!validationResult.details.village.match && (
+                          <div className="flex items-center gap-2">
+                            <XCircle className="w-3 h-3 text-red-500" />
+                            <span className="text-gray-700">Village name mismatch</span>
+                          </div>
+                        )}
+                        {!validationResult.details.landArea.match && (
+                          <div className="flex items-center gap-2">
+                            <XCircle className="w-3 h-3 text-red-500" />
+                            <span className="text-gray-700">Land area mismatch</span>
                           </div>
                         )}
                       </div>
@@ -341,7 +473,7 @@ const UploadPage = () => {
               {/* Land Area */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Land Area * (from document)
+                  Land Area *
                 </label>
                 <div className="flex gap-3">
                   <input
@@ -367,15 +499,12 @@ const UploadPage = () => {
                     <option value="bigha">Bigha</option>
                   </select>
                 </div>
-                <p className="text-xs text-gray-500">
-                  Enter the land area as shown in your document
-                </p>
               </div>
 
               {/* Submit Button */}
               <button
                 onClick={handleUpload}
-                disabled={processingSteps.length > 0 && !uploadResult}
+                disabled={!canSubmit || (processingSteps.length > 0 && !uploadResult)}
                 className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white py-4 rounded-xl font-bold text-lg hover:from-green-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {processingSteps.length > 0 && !uploadResult ? (
@@ -386,7 +515,7 @@ const UploadPage = () => {
                 ) : (
                   <span className="flex items-center justify-center gap-2">
                     <Rocket className="w-5 h-5" />
-                    Upload to Blockchain
+                    {!canSubmit ? 'Fill All Fields & Upload Document' : 'Validate & Upload to Blockchain'}
                   </span>
                 )}
               </button>
@@ -469,7 +598,7 @@ const UploadPage = () => {
                           </div>
                           <p className="text-xs text-gray-600 mt-1">{step.description}</p>
                           {step.message && (
-                            <p className={`text-xs mt-1 ${isError ? 'text-red-600' : 'text-green-600'}`}>
+                            <p className={`text-xs mt-1 font-semibold ${isError ? 'text-red-600' : 'text-green-600'}`}>
                               {step.message}
                             </p>
                           )}
@@ -588,11 +717,25 @@ const UploadPage = () => {
                   <Shield className="w-12 h-12 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 mb-2">
-                  Blockchain-Powered Security
+                  Smart Validation System
                 </h3>
-                <p className="text-gray-600 text-sm">
-                  Your documents are secured with military-grade encryption and stored on immutable blockchain technology.
+                <p className="text-gray-600 text-sm mb-4">
+                  Upload your document and we'll automatically extract and validate the data before blockchain registration.
                 </p>
+                <div className="grid grid-cols-3 gap-3 mt-6">
+                  <div className="bg-white rounded-lg p-3 shadow-sm">
+                    <Scan className="w-6 h-6 text-blue-500 mx-auto mb-1" />
+                    <p className="text-xs font-semibold text-gray-700">Auto Extract</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 shadow-sm">
+                    <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-1" />
+                    <p className="text-xs font-semibold text-gray-700">Validate</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 shadow-sm">
+                    <Shield className="w-6 h-6 text-purple-500 mx-auto mb-1" />
+                    <p className="text-xs font-semibold text-gray-700">Secure</p>
+                  </div>
+                </div>
               </div>
             </div>
           )}

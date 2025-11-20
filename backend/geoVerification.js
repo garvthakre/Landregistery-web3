@@ -7,7 +7,7 @@ const { ethers } = require('ethers');
 // Environment variables
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const RPC_URL = process.env.RPC_URL;
+const RPC_URL = process.env.RPC_URL || "http://127.0.0.1:8545";
 
 const CONTRACT_ABI = [
   "function verifyArea(uint256 _recordId, string _verifiedArea) external",
@@ -17,14 +17,33 @@ const CONTRACT_ABI = [
 
 // Initialize provider & contract
 let provider, wallet, contract;
+let isContractInitialized = false;
 
-try {
-  provider = new ethers.JsonRpcProvider(RPC_URL);
-  wallet = new ethers.Wallet(PRIVATE_KEY, provider);
-  contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, wallet);
-} catch (error) {
-  console.error("⚠️ Geo verification blockchain connection failed:", error);
-}
+const initializeContract = async () => {
+  try {
+    if (!CONTRACT_ADDRESS || !PRIVATE_KEY || !RPC_URL) {
+      console.error("⚠️ Missing blockchain config: CONTRACT_ADDRESS, PRIVATE_KEY, or RPC_URL");
+      return false;
+    }
+
+    provider = new ethers.JsonRpcProvider(RPC_URL);
+    wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, wallet);
+    
+    // Test connection
+    await provider.getNetwork();
+    console.log("✅ Geo verification blockchain connection successful");
+    isContractInitialized = true;
+    return true;
+  } catch (error) {
+    console.error("⚠️ Geo verification blockchain connection failed:", error.message);
+    isContractInitialized = false;
+    return false;
+  }
+};
+
+// Initialize on module load
+initializeContract();
 
 // File paths
 const GEO_VERIFICATION_FILE = path.join(__dirname, 'geo_verifications.json');
@@ -125,24 +144,48 @@ function convertArea(value, fromUnit, toUnit) {
  */
 router.get('/pending', async (req, res) => {
   try {
+    // Check if contract is initialized
+    if (!isContractInitialized) {
+      console.log("⚠️ Contract not initialized, attempting to reconnect...");
+      const initialized = await initializeContract();
+      if (!initialized) {
+        return res.status(503).json({ 
+          success: false, 
+          error: 'Blockchain connection unavailable. Please check if the node is running.' 
+        });
+      }
+    }
+
+    console.log("📡 Fetching pending area verifications from blockchain...");
+    
+    // Get pending verification IDs from contract
     const pendingIds = await contract.getPendingAreaVerifications();
+    console.log(`Found ${pendingIds.length} pending verifications`);
     
     const pendingRecords = [];
+    
+    // Fetch details for each pending record
     for (const id of pendingIds) {
       try {
+        console.log(`Fetching record #${id}...`);
         const record = await contract.getRecord(id);
+        
         pendingRecords.push({
           recordId: id.toString(),
           ownerName: record.ownerName,
           village: record.village,
           claimedArea: record.claimedArea,
           unit: record.unit,
+          ipfsCID: record.ipfsCID,
           timestamp: new Date(Number(record.timestamp) * 1000).toISOString()
         });
       } catch (error) {
         console.error(`Error fetching record ${id}:`, error.message);
+        // Continue with other records even if one fails
       }
     }
+
+    console.log(`✅ Successfully fetched ${pendingRecords.length} pending records`);
 
     res.json({
       success: true,
@@ -150,10 +193,10 @@ router.get('/pending', async (req, res) => {
       records: pendingRecords
     });
   } catch (error) {
-    console.error('Get pending verifications error:', error);
+    console.error('❌ Get pending verifications error:', error);
     res.status(500).json({ 
       success: false, 
-      error: 'Failed to get pending verifications' 
+      error: 'Failed to get pending verifications: ' + error.message 
     });
   }
 });
@@ -168,8 +211,19 @@ router.post('/submit', async (req, res) => {
     if (!recordId || !coordinates || coordinates.length === 0) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Missing required fields' 
+        error: 'Missing required fields: recordId and coordinates' 
       });
+    }
+
+    // Check if contract is initialized
+    if (!isContractInitialized) {
+      const initialized = await initializeContract();
+      if (!initialized) {
+        return res.status(503).json({ 
+          success: false, 
+          error: 'Blockchain connection unavailable' 
+        });
+      }
     }
 
     console.log(`📍 Processing area verification for record ${recordId}`);

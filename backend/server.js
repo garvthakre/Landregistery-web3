@@ -33,7 +33,10 @@ if (!process.env.PINATA_JWT) {
 if (!process.env.CONTRACT_ADDRESS || !process.env.PRIVATE_KEY || !process.env.RPC_URL) {
   console.error("❌ Missing blockchain config in .env");
   console.error("Required: CONTRACT_ADDRESS, PRIVATE_KEY, RPC_URL");
-  process.exit(1);
+  console.error("\n💡 Make sure you have:");
+  console.error("   1. Started hardhat node: npx hardhat node");
+  console.error("   2. Deployed contract: npx hardhat run scripts/deploy.js --network localhost");
+  console.error("   3. Updated .env with contract address\n");
 }
 if (!process.env.GEMINI_KEY) {
   console.warn("⚠️  Missing GEMINI_KEY in .env - OCR will fail");
@@ -42,7 +45,7 @@ if (!process.env.GEMINI_KEY) {
 // CONTRACT CONFIG
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const RPC_URL = process.env.RPC_URL;
+const RPC_URL = process.env.RPC_URL || "http://127.0.0.1:8545";
 const PINATA_JWT = process.env.PINATA_JWT;
 const GEMINI_KEY = process.env.GEMINI_KEY;
 
@@ -62,17 +65,41 @@ const CONTRACT_ABI = [
 
 // Initialize provider & contract
 let provider, wallet, contract;
+let isBlockchainConnected = false;
 
-try {
-  provider = new ethers.JsonRpcProvider(RPC_URL);
-  wallet = new ethers.Wallet(PRIVATE_KEY, provider);
-  contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, wallet);
+async function initializeBlockchain() {
+  try {
+    if (!CONTRACT_ADDRESS || !PRIVATE_KEY || !RPC_URL) {
+      console.warn("⚠️ Blockchain config incomplete - skipping initialization");
+      return false;
+    }
 
-  console.log("✅ Blockchain connected");
-  console.log("📝 Contract:", CONTRACT_ADDRESS);
-  console.log("🔑 Wallet:", wallet.address);
-} catch (error) {
-  console.error("⚠️ Blockchain connection failed:", error);
+    provider = new ethers.JsonRpcProvider(RPC_URL);
+    wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, wallet);
+
+    // Test connection
+    const network = await provider.getNetwork();
+    const balance = await provider.getBalance(wallet.address);
+
+    console.log("✅ Blockchain connected");
+    console.log("📝 Contract:", CONTRACT_ADDRESS);
+    console.log("🔑 Wallet:", wallet.address);
+    console.log("💰 Balance:", ethers.formatEther(balance), "ETH");
+    console.log("🌐 Network:", network.name, "(Chain ID:", network.chainId.toString() + ")");
+    
+    isBlockchainConnected = true;
+    return true;
+  } catch (error) {
+    console.error("⚠️ Blockchain connection failed:", error.message);
+    console.error("\n💡 Troubleshooting:");
+    console.error("   1. Is hardhat node running? Run: npx hardhat node");
+    console.error("   2. Is the RPC_URL correct in .env?");
+    console.error("   3. Is the contract deployed? Run: npx hardhat run scripts/deploy.js --network localhost");
+    console.error("   4. Is the CONTRACT_ADDRESS in .env correct?\n");
+    isBlockchainConnected = false;
+    return false;
+  }
 }
 
 // Initialize Gemini AI
@@ -142,9 +169,9 @@ async function extractDocumentData(imageBuffer, mimeType) {
       If a field is not found, use an empty string. Do not include any markdown formatting or explanation.
     `;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent([
-      { 
+      {   
         inlineData: { 
           data: imageBuffer.toString("base64"), 
           mimeType: mimeType 
@@ -165,12 +192,24 @@ async function extractDocumentData(imageBuffer, mimeType) {
 
 // API ROUTES
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", async (req, res) => {
+  const blockchainStatus = {
+    connected: isBlockchainConnected,
+    contractAddress: CONTRACT_ADDRESS || 'Not configured',
+    walletAddress: wallet ? wallet.address : 'Not connected',
+    rpcUrl: RPC_URL || 'Not configured'
+  };
+
+  // Try to reconnect if not connected
+  if (!isBlockchainConnected && CONTRACT_ADDRESS && PRIVATE_KEY && RPC_URL) {
+    await initializeBlockchain();
+  }
+
   res.json({
     status: "ok",
-    blockchain: contract ? "connected" : "disconnected",
-    wallet: wallet ? wallet.address : "not connected",
+    blockchain: blockchainStatus,
     ocr: genAI ? "enabled" : "disabled",
+    ipfs: PINATA_JWT ? "configured" : "not configured"
   });
 });
 
@@ -222,12 +261,22 @@ app.post("/api/upload-document", upload.single("file"), async (req, res) => {
     const { ownerName, village, landArea, unit, userId, userAadhar } = req.body;
     const file = req.file;
 
-    // UPDATED VALIDATION: Check for landArea and unit instead of lat/lng
     if (!ownerName || !village || !file || !landArea || !unit) {
       return res.status(400).json({ 
         success: false, 
         error: "Missing required fields: ownerName, village, landArea, unit, or file" 
       });
+    }
+
+    // Check blockchain connection
+    if (!isBlockchainConnected) {
+      const reconnected = await initializeBlockchain();
+      if (!reconnected) {
+        return res.status(503).json({ 
+          success: false, 
+          error: "Blockchain connection unavailable. Please ensure hardhat node is running." 
+        });
+      }
     }
 
     console.log("📤 Upload initiated for:", ownerName, "(", village, ")");
@@ -241,7 +290,7 @@ app.post("/api/upload-document", upload.single("file"), async (req, res) => {
     const ipfsResult = await uploadToPinata(file.buffer, file.originalname);
     console.log("✨ IPFS Upload:", ipfsResult.ipfsHash);
 
-    // UPDATED: Create blockchain transaction with AREA instead of geolocation
+    // Create blockchain transaction with AREA instead of geolocation
     console.log("📝 Creating blockchain record with area information...");
     const tx = await contract.createRecord(
       ownerName,
@@ -348,6 +397,17 @@ app.post("/api/verify", upload.single("file"), async (req, res) => {
       });
     }
 
+    // Check blockchain connection
+    if (!isBlockchainConnected) {
+      const reconnected = await initializeBlockchain();
+      if (!reconnected) {
+        return res.status(503).json({ 
+          success: false, 
+          error: "Blockchain connection unavailable" 
+        });
+      }
+    }
+
     console.log("🔍 Verifying document for record:", recordId);
 
     const uploadedHash = calculateHash(file.buffer);
@@ -388,6 +448,17 @@ app.post("/api/verify", upload.single("file"), async (req, res) => {
 // Fetch a record
 app.get("/api/record/:id", async (req, res) => {
   try {
+    // Check blockchain connection
+    if (!isBlockchainConnected) {
+      const reconnected = await initializeBlockchain();
+      if (!reconnected) {
+        return res.status(503).json({ 
+          success: false, 
+          error: "Blockchain connection unavailable" 
+        });
+      }
+    }
+
     const id = req.params.id;
     console.log("📖 Fetching record:", id);
 
@@ -427,6 +498,17 @@ app.get("/api/record/:id", async (req, res) => {
 // Get all records
 app.get("/api/records", async (req, res) => {
   try {
+    // Check blockchain connection
+    if (!isBlockchainConnected) {
+      const reconnected = await initializeBlockchain();
+      if (!reconnected) {
+        return res.status(503).json({ 
+          success: false, 
+          error: "Blockchain connection unavailable" 
+        });
+      }
+    }
+
     const count = await contract.getRecordCount();
     const recordCount = Number(count);
 
@@ -464,14 +546,25 @@ app.get("/api/records", async (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log("🚀 Tribal Land Registry Server Running");
-  console.log("======================================");
-  console.log(`📡 Server: http://localhost:${PORT}`);
-  console.log(`🔗 Contract: ${CONTRACT_ADDRESS}`);
-  console.log(`👤 Wallet: ${wallet.address}`);
-  console.log(`🤖 OCR: ${genAI ? 'Enabled' : 'Disabled'}`);
-  console.log(`📏 Area Verification: Enabled`);
-  console.log("======================================");
+// Initialize blockchain connection
+initializeBlockchain().then(() => {
+  // Start server
+  app.listen(PORT, () => {
+    console.log("🚀 Tribal Land Registry Server Running");
+    console.log("======================================");
+    console.log(`📡 Server: http://localhost:${PORT}`);
+    console.log(`🔗 Contract: ${CONTRACT_ADDRESS || 'Not configured'}`);
+    console.log(`👤 Wallet: ${wallet ? wallet.address : 'Not connected'}`);
+    console.log(`🤖 OCR: ${genAI ? 'Enabled' : 'Disabled'}`);
+    console.log(`📏 Area Verification: ${isBlockchainConnected ? 'Enabled' : 'Disabled (Blockchain not connected)'}`);
+    console.log("======================================");
+    
+    if (!isBlockchainConnected) {
+      console.log("\n⚠️  WARNING: Blockchain not connected!");
+      console.log("To enable blockchain features:");
+      console.log("1. Start hardhat: npx hardhat node");
+      console.log("2. Deploy contract: npx hardhat run scripts/deploy.js --network localhost");
+      console.log("3. Update .env with CONTRACT_ADDRESS\n");
+    }
+  });
 });
